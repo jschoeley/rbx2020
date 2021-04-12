@@ -1,0 +1,9 @@
+# Ignore everything in this directory
+*
+# Except these files and folders
+!.gitignore
+!*.pdf
+!*.tex
+!*.bib
+!*.sty
+!fig
