@@ -27,19 +27,20 @@
 \begin{titlepage}
 
 {\textbf{Title:}
-Robustness and bias of excess death estimates in 2020 under varying model specifications
+Robustness and bias of excess death estimates under varying model specifications
 \par\medskip}
 
 {\textbf{Authors:}
-Jonas Schöley$^{1}$
+Jonas Schöley$^{1,2}$
 \par\medskip}
 
 {\textbf{Affiliations:}\par
-$^1$ Interdisciplinary Centre on Population Dynamics, University of Southern Denmark; Odense 5000, Denmark\par
+$^1$ Interdisciplinary Centre on Population Dynamics, University of Southern Denmark; Odense, Denmark\par
+$^2$ Max Planck Institute for Demographic Research; Rostock, Germany\par
 \par\medskip}
 
 {\textbf{Corresponding authors:}\par
-Jonas Schöley \href{mailto:jschoeley@health.sdu.dk}{\texttt{jschoeley@health.sdu.dk}}\par
+Jonas Schöley \href{mailto:schoeley@demogr.mpg.de}{\texttt{schoeley@demogr.mpg.de}}\par
 \par\medskip}
 
 {\textbf{Keywords:}
@@ -116,8 +117,8 @@ We compare the 10 different models listed in Table \ref{tab:models} in terms of 
 \textbf{Model} & \textbf{Description} & \textbf{References} \\ \midrule
 % Averages
 \textbf{Weekly averages}\par
-(AVG5c) 5 year average death counts\par
-(AVG5r) 5 year average death rates
+(AVGc5) 5 year average death counts\par
+(AVGr5) 5 year average death rates
  &
  simple mean over the weekly deaths counts or death rates in the preceding years
  &
@@ -198,7 +199,7 @@ The ranking of countries along the percent excess deaths in 2020 was largely sta
 \end{figure}
 
 % prediction deviations from reference model
-In Figure \ref{fig:baselinediff}a we compared the 5-year average death count model (AVGc5, the reference) to various other models concerning the expected number of deaths in 2020. The Euromomo Serfling model (SRFcem) and the reference tended to produce the lowest expected death estimates and thus the highest excess death counts, whereas the 5-year average death rate model (AVGr5) gravitated towards the highest expected death counts, with predictions being higher by 3.6 to 5.1\% compared to the reference for half of the countries. The regression models with exposure offset (SRFr, GAM*, LGM*) estimated baseline deaths close to the reference model if somewhat higher, whereas the Serfling model without exposures (SRFc) tended towards substantially higher expected deaths. The Latent Gaussian Models (LGM*) had the highest agreement with the reference, e.g., for half of the countries, the sophisticated model LGMrt2 produced estimates within -0.7 to 1.1\% of the basic average death count prediction. Similar results were found for predictions of total deaths by sex and age strata within a country, albeit with higher variability of the percentage differences for any given model (Figure \ref{fig:baselinediff}b).
+We compared the 5-year average death count model (AVGc5, the reference) to various other models concerning the expected number of deaths in 2020 (Figure \ref{fig:baselinediff}a). The Euromomo Serfling model (SRFcem) and the reference tended to produce the lowest expected death estimates and thus the highest excess death counts, whereas the 5-year average death rate model (AVGr5) gravitated towards the highest expected death counts, with predictions being higher by 3.6 to 5.1\% compared to the reference for half of the countries. The regression models with exposure offset (SRFr, GAM*, LGM*) estimated baseline deaths close to the reference model if somewhat higher, whereas the Serfling model without exposures (SRFc) tended towards substantially higher expected deaths. The Latent Gaussian Models (LGM*) had the highest agreement with the reference, e.g., for half of the countries, the sophisticated model LGMrt2 produced estimates within -0.7 to 1.1\% of the basic average death count prediction. Similar results were found for predictions of total deaths by sex and age strata within a country, albeit with higher variability of the percentage differences for any given model (Figure \ref{fig:baselinediff}b).
 
 \begin{figure}
 \caption{Percent differences of predicted death counts from various models against the 5-year average weekly death prediction. \emph{Note: The prediction differences were summarised across countries and, where applicable, weeks and strata by the 0.25, 0.5, and 0.75 quantiles.}}
@@ -263,7 +264,9 @@ $T$ & temperature anomaly & $\nu$ & temperature anomaly coef. & $f,g$ & smooth f
 
 \vspace{1em}
 
-We fit the \emph{Serfling with exposures} (SRFr) via
+All models were implemented and fit in the \texttt{R} programming language.
+
+The \emph{Serfling with exposures} (SRFr) model is a Poisson regression specified as
 
 \begin{equation}
 \begin{aligned}
@@ -278,9 +281,9 @@ We fit the \emph{Serfling with exposures} (SRFr) via
 \label{eq:srfr}
 \end{equation}
 
-Omitting the term $\log E_i$ from (\ref{eq:srfr}) yields the \emph{Serfling without exposures} (SRFc) model. For the \emph{Euromomo style Serfling model} (SRFcem) we dropped the exposure, holiday and half year seasonal cycle from (\ref{eq:srfr}) and only fitted the model over a five year period on weeks 15 through 26 and 36 through 45.
+Model (\ref{eq:srfr}) expresses weekly death counts as a function of stratum specific intercepts $\alpha_{j[i]}$, relative rates of mortality improvement $\beta_{j[i]}$, time constant parametric seasonal effects $\gamma_{j[i]}$, public holiday intercepts $\delta_{j[i]}$, and population structure $E_i$ offsets. Omitting the term $\log E_i$ from (\ref{eq:srfr}) yields the \emph{Serfling without exposures} (SRFc) model. For the \emph{Euromomo style Serfling model} (SRFcem) we dropped the exposure, holiday and half year seasonal cycle from (\ref{eq:srfr}) and only fitted the model over a five year period on weeks 15 through 26 and 36 through 45. All Serfling models were fit via the \texttt{glm} function in \texttt{R}. Expected deaths in the near future were derived by extrapolating beyond the fitting period.
 
-The \emph{Generalized Additive Model with temperature anomaly} (GAMrt) allows for non-parametric, smooth seasonal effects and adjusts for the effect of extreme temperature on weekly death counts. We specify the model as
+The \emph{Generalized Additive Model with temperature anomaly} (GAMrt) allows for non-parametric, smooth seasonal effects and adjusts for the effect of extreme temperature on weekly death counts. We specified the model as
 
 \begin{equation}
   \begin{aligned}
@@ -290,23 +293,45 @@ The \emph{Generalized Additive Model with temperature anomaly} (GAMrt) allows fo
   \label{eq:gamrt}
 \end{equation}
 
-where $f_{j[i]}(w_i)$ is a stratum specific seasonality term implemented as a cyclical penalized spline, and $\nu_{w[i]}=g(w_i)$ is the temperature anomaly coefficient varying smoothly over week of year in a cyclical fashion. For the \emph{Generalized Additive Model without temperature anomaly} (GAMr) we omitted this term.
+where $f_{j[i]}(w_i)$ is a stratum specific seasonality term implemented as a cyclical penalized spline, and $\nu_{w[i]}=g(w_i)$ is the temperature anomaly coefficient varying smoothly over week of year in a cyclical fashion. For the \emph{Generalized Additive Model without temperature anomaly} (GAMr) we omitted this term. Analogous to the SRFr model we specified a log-linear mortality trend, public holiday intercepts, and an offset controlling for population strucure. The model was fit via the \texttt{gam} function from the \texttt{mgcv} library in \texttt{R}.
 
-The \emph{Latent Gaussian model with temperature anomaly} (LGMrt) follows the specification by \cite{Kontis2020}. The model is fitted separately by age group and sex and in the following we omit the subscript $j[i]$.
+The \emph{Latent Gaussian model with temperature anomaly} (LGMrt) follows the specification by \cite{Kontis2020}. The model is fitted separately by age group and sex and, omitting the subscript $j[i]$, can be written as:
 
 \begin{equation}
   \begin{aligned}
     D_i \sim& \text{Pois}(\lambda_i) \\
     \log \lambda_i =& \alpha + \beta t_i +
     \zeta_{t[i]} + \gamma_{t[i]} +
-    \nu_{w[i]} T_i + \delta H_i + \log E_i.
+    \nu_{w[i]} T_i + \delta H_i + \log E_i,
   \end{aligned}
   \label{eq:lgmrt}
 \end{equation}
 
-The model features three components modeling the weekly time series of death rates: $\beta t_i$ is a simple log-linear trend over time, $\zeta_{t[i]} \sim \text{Normal}(\phi \zeta_{t[i]-1}, \sigma^2_\zeta)$ is a first order autoregressive trend, and $\gamma_{t[i]}$ is a seasonal random effect under the prior that the summed effect of every consecutive series of 52 weeks on mortality is distributed as $\sum_{s=0}^{51} \gamma_{t[i]+s} \sim \text{Normal}(0, \sigma^2_\gamma)$, thus allowing for a varying magnitude of seasonality over years.
+where $\beta t_i$ is a simple log-linear trend over time, $\zeta_{t[i]} \sim \text{Normal}(\phi \zeta_{t[i]-1}, \sigma^2_\zeta)$ is a first order autoregressive trend, and $\gamma_{t[i]}$ is a seasonal random effect under the prior that the summed effect of every consecutive series of 52 weeks on mortality is distributed as $\sum_{s=0}^{51} \gamma_{t[i]+s} \sim \text{Normal}(0, \sigma^2_\gamma)$, thus allowing for a varying magnitude of seasonality over years. The effect of temperature anomalies on weekly mortality is capture by the varying coefficient $\nu_{w[i]} \sim \text{Normal}(\nu_{w[i]-1}, \sigma^2_\nu)$, specified as a circular first order random walk over week of year. We also tested an alternative specification with second order autoregressive trends and random walks (LGMrt2) and a specification without the temperature effect (LGMr). The model was implemented via the \texttt{INLA} library in \texttt{R} \cite{Rue2009, Rue2021}.
 
-[To be continued]
+In line with the regression notation used above the \emph{5 year average death count model} (AVGc5) can be written as
+
+\begin{equation}
+  \begin{aligned}
+    D_i \sim& \text{Normal}(\mu_i) \\
+    \mu_i =& \alpha_{j[i]w[i]},
+  \end{aligned}
+  \label{eq:avgc}
+\end{equation}
+
+and the \emph{5 year average death rate model} as
+
+\begin{equation}
+  \begin{aligned}
+    D_i/E_i \sim& \text{Normal}(\mu_i) \\
+    \mu_i =& \alpha_{j[i]w[i]}.
+  \end{aligned}
+  \label{eq:avgr}
+\end{equation}
+
+In both cases the coefficients are estimated over the five years preceding the year of interest.
+
+\clearpage
 
 \subsection*{Supplementary figures}
 
