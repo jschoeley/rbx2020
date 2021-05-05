@@ -139,16 +139,10 @@ source(path$global_constants)
 
 load(path$input_data)
 
-# Ensure integer death counts -------------------------------------
-
-dat$weekly_mortality <-
-  mocy %>%
-  mutate(deaths = deaths %>% round() %>% as.integer())
-
 # Combine deaths [0,15) and [15,65) into [0,65) -------------------
 
 dat$weekly_mortality <-
-  dat$weekly_mortality %>%
+  mocy %>%
   # recode the age groups [0,15) and [15,65) to [0, 65)
   mutate(
     age_start = case_when(
