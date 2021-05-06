@@ -27,23 +27,23 @@ mod_para <-
     # ... AVG ---------------------------------------------------------
     
     'AVRc5', 'glm', list(
-      formula = formula(
+      models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks
           as.factor(iso_week)*stratum_id
-      ),
+      )),
       family = quasipoisson(link = 'log'),
       n_years_for_training = 5,
       weeks_for_training = NULL
     ),
     
     'AVRr5', 'glm', list(
-      formula = formula(
+      models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks
           as.factor(iso_week)*stratum_id +
           offset(log(personweeks))
-      ),
+      )),
       family = quasipoisson(link = 'log'),
       n_years_for_training = 5,
       weeks_for_training = NULL
@@ -53,62 +53,116 @@ mod_para <-
     
     # Euromomo style Serfling
     # https://github.com/EuroMOMOnetwork/MOMO/blob/master/R/excess.R
+    # AIC selection of seasonality
     'SRFcem', 'glm', list(
-      formula = formula(
-        deaths_observed ~
-          # log linear long term trend
-          origin_weeks*stratum_id +
-          # seasonality full year period
-          sin(2*pi/52*iso_week)*stratum_id +
-          cos(2*pi/52*iso_week)*stratum_id
+      models = list(
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # seasonality full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id
+        )
       ),
       family = quasipoisson(link = 'log'),
       weeks_for_training = c(15:26, 36:45),
       n_years_for_training = 5
     ),
     # Forecasting Serfling without exposures
+    # AIC selection of seasonality
     'SRFc', 'glm', list(
-      formula = formula(
-        deaths_observed ~
-          # log linear long term trend
-          origin_weeks*stratum_id +
-          # seasonality
-          # full year period
-          sin(2*pi/52*iso_week)*stratum_id +
-          cos(2*pi/52*iso_week)*stratum_id +
-          # half year period
-          sin(2*pi/26*iso_week)*stratum_id +
-          cos(2*pi/26*iso_week)*stratum_id +
-          # adjustment for special weeks
-          holiday3*stratum_id
+      models = list(
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # seasonality
+            # full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id +
+            # half year period
+            sin(2*pi/26*iso_week)*stratum_id +
+            cos(2*pi/26*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # seasonality
+            # full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
+        )
       ),
       family = quasipoisson(link = 'log'),
       weeks_for_training = NULL,
       n_years_for_training = NULL
     ),
     # Forecasting Serfling with exposures
+    # AIC selection of seasonality
     'SRFr', 'glm', list(
-      formula = formula(
-        deaths_observed ~
-          # log linear long term trend
-          origin_weeks*stratum_id +
-          # seasonality
-          # full year period
-          sin(2*pi/52*iso_week)*stratum_id +
-          cos(2*pi/52*iso_week)*stratum_id +
-          # half year period
-          sin(2*pi/26*iso_week)*stratum_id +
-          cos(2*pi/26*iso_week)*stratum_id +
-          # adjustment for special weeks
-          holiday3*stratum_id +
-          # exposures
-          offset(log(personweeks))
+      models = list(
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # seasonality
+            # full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id +
+            # half year period
+            sin(2*pi/26*iso_week)*stratum_id +
+            cos(2*pi/26*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id +
+            # exposures
+            offset(log(personweeks))
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # seasonality
+            # full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id +
+            # exposures
+            offset(log(personweeks))
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id +
+            # exposures
+            offset(log(personweeks))
+        )
       ),
       family = quasipoisson(link = 'log'),
       weeks_for_training = NULL,
       n_years_for_training = NULL
     ),
-
+    
     # ... GAM ---------------------------------------------------------
     
     # Gam without temperature
