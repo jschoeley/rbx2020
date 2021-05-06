@@ -68,7 +68,7 @@ mod_para <-
             sin(2*pi/26*iso_week) +
             cos(2*pi/26*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         ),
         formula(
           deaths_observed ~
@@ -79,7 +79,7 @@ mod_para <-
             sin(2*pi/52*iso_week) +
             cos(2*pi/52*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         ),
         formula(
           deaths_observed ~
