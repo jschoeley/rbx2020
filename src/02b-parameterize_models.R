@@ -73,7 +73,7 @@ mod_para <-
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
             sin(2*pi/52*iso_week) +
