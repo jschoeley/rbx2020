@@ -91,7 +91,7 @@ mod_para <-
       ),
       family = quasipoisson(link = 'log'),
       weeks_for_training = c(15:26, 36:45),
-      n_years_for_training = 5
+      n_years_for_training = NULL
     ),
     # Forecasting Serfling without exposures
     # AIC selection of seasonality
