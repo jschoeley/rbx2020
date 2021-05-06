@@ -324,9 +324,9 @@ ModSpec$CountGAM <- function (
   
 }
 
-# KontisINLA ------------------------------------------------------
+# KontisLGM -------------------------------------------------------
 
-#' Kontis etal. Count Prediction with INLA
+#' Kontis etal. Count Prediction LGM
 #'
 #' @param df data frame containing the variables in the model.
 #' @param formula1 formula for inla(). terms must only use the
@@ -365,7 +365,7 @@ ModSpec$CountGAM <- function (
 #' <df> with added column <deaths_predicted> containing the expected
 #' death counts, and columns <deaths_sim><1:nsim> containing simulated
 #' death counts from the posterior predictive distribution.
-ModSpec$KontisINLA <- function (
+ModSpec$KontisLGM <- function (
   df,
   formula1,
   formula2 = NULL,
