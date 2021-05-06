@@ -48,6 +48,8 @@ cnst <- within(cnst,{
     pull(region_code)
   # how many threads used to fit models?
   cpu_nodes = 8
+  # number of draws from predicted distribution of deaths
+  nsim = 500
 })
 
 dat <- list()
@@ -64,125 +66,83 @@ mocy_cv <- readRDS(paths$mocy_cv)
 
 # Prepare data for fit --------------------------------------------
 
+# filter to countries of interest and add variables of interest
 dat$cv_data <-
   mocy_cv %>%
-  # filter to countries of interest and add variables of interest
   filter(region_iso %in% cnst$countries) %>%
   ungroup()
 
-# Fit models and predict ------------------------------------------
-
-# merge CV data with model specs
+# merge data with model specs
 dat$fit_data <-
   dat$cv_data %>%
-  nest(
-    # those are the dimensions to loop over, e.g.
-    # separate fits by country and cv_id
-    data = c(-region_iso, -cv_id)
-  ) %>%
-  expand_grid(
-    nest(
-      mod_para,
-      model_para =
-        c(-model_id, -model_class)
-    )
-  )
+  nest(data = c(-region_iso, -cv_id)) %>%
+  expand_grid(mod_para)
+
+# Fit models and predict ------------------------------------------
 
 # fit models
 dat$fitted_models <-
   foreach(
     x = iter(dat$fit_data, by = 'row'),
     .combine = bind_rows,
-    .packages = c('dplyr', 'tidyr', 'mgcv', 'compositions', 'INLA')
+    .packages = c('dplyr', 'tidyr', 'mgcv', 'INLA')
   ) %dopar% {suppressPackageStartupMessages({
     
     cat(Sys.time(), ' Fit ', x$region_iso,
         ' on CV set ', x$cv_id,
         ' for ', x$model_id, '\n', sep = '')
     
-    # prepare training and prediction data
+    # extract input data
     input_dat <- x[,'data'][[1]][[1]]
-    dat_train <- filter(input_dat, cv_sample == 'training')
-    dat_pred <- input_dat
+    # model parameterization
+    model_para <- x$model_para[[1]]
     
     # fit models and capture errors
     result <- tryCatch({
       
-      # ... Average mortality models ----------------------------------------
-      
-      if (x$model_class == 'avg') {
+      # GLM
+      if (x$model_class == 'glm') {
         
-        # fit model and predict from it
-        model_fit_and_predictions <- ModSpec$ModSimpleAverages(
-          df_training = dat_train, df_prediction = dat_pred,
-          week_name = iso_week, death_name = deaths_observed,
-          exposure_name = personweeks, year_name = iso_year,
-          n_years = x$model_para[[1]][[1]][[1]][['n_years']],
-          stat = x$model_para[[1]][[1]][[1]][['stat']],
-          sex, age_group
-        )
-        
-      }
-
-      # ... Time series models ----------------------------------------------
-
-      if (x$model_class == 'ts') {
-        
-        # fit model and predict from it
-        model_fit_and_predictions <- ModSpec$ModTS(
-          df = dat_pred,
-          sample_name = cv_sample, deaths_name = deaths_observed,
-          date_name = date, stratum_id_name = stratum_id,
-          model = x$model_para[[1]][[1]][[1]][['model']],
-          lags = x$model_para[[1]][[1]][[1]][['lags']],
-          persistence = x$model_para[[1]][[1]][[1]][['persistence']],
-          distribution = x$model_para[[1]][[1]][[1]][['distribution']],
-          initial = x$model_para[[1]][[1]][[1]][['initial']],
-          orders = x$model_para[[1]][[1]][[1]][['orders']]
+        predictions <- ModSpec$SerflingGLM(
+          df = input_dat,
+          models = model_para$models,
+          family = model_para$family,
+          col_sample = 'cv_sample',
+          col_stratum = 'stratum_id',
+          weeks_for_training = model_para$weeks_for_training,
+          col_week = 'iso_week',
+          n_years_for_training = model_para$n_years_for_training,
+          col_year = 'iso_year',
+          nsim = cnst$nsim, simulate_beta = TRUE, simulate_y = TRUE
         )
         
       }
       
-      # ... Serfling models -------------------------------------------------
-      
-      if (x$model_class == 'serfling') {
-        
-        model_fit_and_predictions <- ModSpec$ModSerfling(
-          df_training = dat_train, df_prediction = dat_pred,
-          formula = x$model_para[[1]][[1]][[1]][['formula']],
-          family = x$model_para[[1]][[1]][[1]][['family']],
-          name_week = iso_week,
-          weeks_for_training = x$model_para[[1]][[1]][[1]][['weeks_for_training']],
-          name_year = iso_year,
-          n_years_for_training = x$model_para[[1]][[1]][[1]][['n_years_for_training']]
-        )
-        
-      }
-      
-      # ... GAM models ------------------------------------------------------
-      
+      # GAM
       if (x$model_class == 'gam') {
         
-        model_fit_and_predictions <- ModSpec$ModGAM(
-          df_training = dat_train, df_prediction = dat_pred,
-          formula = x$model_para[[1]][[1]][[1]][['formula']],
-          family = x$model_para[[1]][[1]][[1]][['family']],
-          method = x$model_para[[1]][[1]][[1]][['method']]
+        predictions <- ModSpec$CountGAM(
+          df = input_dat, formula = model_para$formula,
+          family = model_para$family,
+          col_sample = 'cv_sample',
+          nsim = cnst$nsim, simulate_beta = TRUE, simulate_y = TRUE
         )
         
       }
 
-      # ... INLA models -------------------------------------------------
-
-      if (x$model_class == 'inla') {
+      # LGM
+      if (x$model_class == 'lgm') {
         
-        model_fit_and_predictions <- ModSpec$ModINLA(
-          df_traintest = dat_pred,
-          inla_formula = x$model_para[[1]][[1]][[1]][['inla_formula']],
-          stratum_name = stratum_id, sample_name = cv_sample,
-          death_name = deaths_observed, exposure_name = personweeks,
-          tanomaly_name = temperature_anomaly, week_name = epi_week,
-          time_name = origin_weeks, holiday_name = holiday3,
+        predictions <- ModSpec$KontisLGM(
+          df = input_dat, formula1 = model_para$formula,
+          formula2 = NULL, formula2_threshold = NULL,
+          col_stratum = 'stratum_id', col_sample = 'cv_sample',
+          col_death = 'deaths_observed', col_exposure = 'personweeks',
+          col_tanomaly = 'temperature_anomaly', col_week = 'iso_week',
+          col_time = 'origin_weeks', col_holiday = 'holiday3',
+          nsim = cnst$nsim,
+          weeks_for_training_within_year = NULL,
+          weeks_for_training_pre_test = NULL,
           # because the iteration is already across multiple cores
           # make INLA only use a single core, this actually speeds-up
           # the whole fitting procedure
@@ -196,8 +156,7 @@ dat$fitted_models <-
       result_if_no_error <- bind_cols(
         x,
         tibble(
-          #fitted_model = list(model_fit_and_predictions$model),
-          predictions = list(model_fit_and_predictions$predictions),
+          predictions = list(predictions),
           error_while_fit = FALSE,
           error_message = NA
         )
@@ -210,14 +169,16 @@ dat$fitted_models <-
     error = function(e) {
       cat(Sys.time(), ' Error', x$region_iso, ' on CV set ', x$cv_id,
           ' for ', x$model_id, ': ', geterrmessage(), '\n')
+      # return same object as fitted model, but with NA predictions
+      input_dat[,c('deaths_predicted',paste0('deaths_sim', 1:100))] <- NA
       result_if_error <- bind_cols(x, tibble(
-        #fitted_model = list(NA),
-        predictions = list(dat_pred %>% mutate(deaths_predicted = NA)),
+        predictions = list(input_dat),
         error_while_fit = TRUE,
         error_message = geterrmessage()
       ))
       return(result_if_error)
-    })
+
+    }) # end of tryCatch()
     
     return(result)
     
@@ -225,26 +186,49 @@ dat$fitted_models <-
 
 stopCluster(cnst$cl)
 
+# remove superfluous data column from fitted_models
+# input data is part of predictions
+dat$fitted_models <-
+  dat$fitted_models %>% select(-data)
+
 # Plot observed vs. fitted ----------------------------------------
 
 dat$fitted_models %>%
-  #filter(model_id == '5-year avg. weekly mortality') %>%
+  filter(!error_while_fit) %>%
   group_by(region_iso, model_id) %>%
   group_walk(~{
     
-    fig_dat <-
-      # predictions for single country and model
-      .x %>%
-      unnest(predictions) %>%
+    predictions <- unnest(.x, predictions)
+    expected_deaths <-
+      predictions %>%
       group_by(cv_id, date, cv_sample) %>%
       summarise(
         deaths_observed = sum(deaths_observed),
         deaths_predicted = sum(deaths_predicted)
-      )
-
+      ) %>%
+      ungroup()
+    simulated_deaths <-
+      predictions %>%
+      pivot_longer(cols = starts_with('deaths_sim'),
+                   names_to = 'sim_id', values_to = 'deaths_sim') %>%
+      group_by(cv_id, date, cv_sample, sim_id) %>%
+      summarise(
+        deaths_sim = sum(deaths_sim)
+      ) %>%
+      group_by(cv_id, date, cv_sample) %>%
+      summarise(
+        q05 = quantile(deaths_sim, 0.05, na.rm = TRUE),
+        q95 = quantile(deaths_sim, 0.95, na.rm = TRUE)
+      ) %>%
+      ungroup()
+    
+    fig_dat <- left_join(expected_deaths, simulated_deaths)
+    
     fig[[paste(.y[[1]], .y[[2]])]] <<-
       fig_dat %>%
       ggplot(aes(x = date)) +
+      geom_ribbon(aes(ymin = q05, ymax = q95),
+                  fill = 'grey70', color = NA) +
       geom_point(aes(color = cv_sample, y = deaths_observed),
                  size = 0.3) +
       geom_line(aes(y = deaths_predicted, alpha = cv_sample),
