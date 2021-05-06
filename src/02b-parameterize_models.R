@@ -30,7 +30,7 @@ mod_para <-
       models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks
-          as.factor(iso_week)*stratum_id
+          as.factor(iso_week)
       )),
       family = quasipoisson(link = 'log'),
       n_years_for_training = 5,
@@ -41,7 +41,7 @@ mod_para <-
       models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks
-          as.factor(iso_week)*stratum_id +
+          as.factor(iso_week) +
           offset(log(personweeks))
       )),
       family = quasipoisson(link = 'log'),
@@ -59,14 +59,14 @@ mod_para <-
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # half year period
-            sin(2*pi/26*iso_week)*stratum_id +
-            cos(2*pi/26*iso_week)*stratum_id +
+            sin(2*pi/26*iso_week) +
+            cos(2*pi/26*iso_week) +
             # adjustment for special weeks
             holiday3*stratum_id
         ),
@@ -76,17 +76,17 @@ mod_para <-
             origin_weeks*stratum_id +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # adjustment for special weeks
             holiday3*stratum_id
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         )
       ),
       family = quasipoisson(link = 'log'),
@@ -100,34 +100,34 @@ mod_para <-
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # half year period
-            sin(2*pi/26*iso_week)*stratum_id +
-            cos(2*pi/26*iso_week)*stratum_id +
+            sin(2*pi/26*iso_week) +
+            cos(2*pi/26*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # adjustment for special weeks
-            holiday3*stratum_id
+            holiday3
         )
       ),
       family = quasipoisson(link = 'log'),
@@ -141,38 +141,38 @@ mod_para <-
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # half year period
-            sin(2*pi/26*iso_week)*stratum_id +
-            cos(2*pi/26*iso_week)*stratum_id +
+            sin(2*pi/26*iso_week) +
+            cos(2*pi/26*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id +
+            holiday3 +
             # exposures
             offset(log(personweeks))
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # seasonality
             # full year period
-            sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id +
+            sin(2*pi/52*iso_week) +
+            cos(2*pi/52*iso_week) +
             # adjustment for special weeks
-            holiday3*stratum_id +
+            holiday3 +
             # exposures
             offset(log(personweeks))
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id +
+            origin_weeks +
             # adjustment for special weeks
-            holiday3*stratum_id +
+            holiday3 +
             # exposures
             offset(log(personweeks))
         )
