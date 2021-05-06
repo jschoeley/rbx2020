@@ -60,14 +60,33 @@ mod_para <-
           deaths_observed ~
             # log linear long term trend
             origin_weeks*stratum_id +
-            # seasonality full year period
+            # seasonality
+            # full year period
             sin(2*pi/52*iso_week)*stratum_id +
-            cos(2*pi/52*iso_week)*stratum_id
+            cos(2*pi/52*iso_week)*stratum_id +
+            # half year period
+            sin(2*pi/26*iso_week)*stratum_id +
+            cos(2*pi/26*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
         ),
         formula(
           deaths_observed ~
             # log linear long term trend
-            origin_weeks*stratum_id
+            origin_weeks*stratum_id +
+            # seasonality
+            # full year period
+            sin(2*pi/52*iso_week)*stratum_id +
+            cos(2*pi/52*iso_week)*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
+        ),
+        formula(
+          deaths_observed ~
+            # log linear long term trend
+            origin_weeks*stratum_id +
+            # adjustment for special weeks
+            holiday3*stratum_id
         )
       ),
       family = quasipoisson(link = 'log'),
