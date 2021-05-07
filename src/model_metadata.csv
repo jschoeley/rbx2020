@@ -1,8 +1,8 @@
 code,name,description,include,order_1,order_2,highlight
-AVGc3,3-year avg. weekly deaths,3 year average weekly death counts,0,1,11,a
-AVGc5,5-year avg. weekly deaths,5 year average weekly death counts,1,2,12,a
-AVGr3,3-year avg. weekly mortality,3 year average weekly death rates,0,3,1,a
-AVGr5,5-year avg. weekly mortality,5 year average weekly death rates,1,4,2,a
+AVRc3,3-year avg. weekly deaths,3 year average weekly death counts,0,1,11,a
+AVRc5,5-year avg. weekly deaths,5 year average weekly death counts,1,2,12,a
+AVRr3,3-year avg. weekly mortality,3 year average weekly death rates,0,3,1,a
+AVRr5,5-year avg. weekly mortality,5 year average weekly death rates,1,4,2,a
 SRFcem,Serfling Euromomo,Euromomo style Serfling regression,1,5,9,b
 SRFc,Serfling w/o exposures,Serfling quasipoisson regression on death counts,1,6,10,b
 SRFr,Serfling with exposures,Serfling quasipoisson regression on death counts with exposures,1,7,3,b
@@ -10,4 +10,4 @@ GAMr,GAM w/o temperature,GAM on death counts,1,8,4,c
 GAMrt,GAM with temperature,GAM on death counts with cyclical varying coefficient temperature,1,9,5,c
 LGMr,LGM w/o temperature,LGM on death counts,1,10,6,d
 LGMrt,LGM with temperature,LGM on death counts with cyclical varying coefficient temperature,1,11,7,d
-LGMrt2,LGM with temperature AR2/RW2,LGMrt with different order of random walk and auto-regressive effects,1,12,8,d
+LGMrt2,LGM with temperature AR2/RW2,LGMrt with different order of random walk and auto-regressive effects,0,12,8,d

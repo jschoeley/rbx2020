@@ -35,13 +35,14 @@ dat$fitted_models <- readRDS(path$fitted_models)
 # fitted cross-validation series, only test data
 dat$cv_test <-
   dat$fitted_models %>%
-  filter(cv_id != 0) %>%
-  unnest(predictions) %>%
   filter(
-    cv_sample == 'test',
-    error_while_fit == FALSE,
-    model_id %in% cnst$models_to_include
-  )
+    cv_id != 0,
+    model_id %in% cnst$models_to_include,
+    error_while_fit == FALSE
+  ) %>%
+  unnest(predictions) %>%
+  filter(cv_sample == 'test') %>%
+  select(-contains('deaths_sim'))
 
 # Calculate errors on multiple aggregation levels -----------------
 
@@ -116,34 +117,34 @@ PlotErrorsAndBias <- function (df_errors, error_measure, bias_measure, xlab) {
     geom_segment(
       aes(x = error_qlo, xend = error_qhi),
       position = position_nudge(y = ynudge),
-      size = sizelarge
+      size = sizesmall
     ) +
     geom_label(
       aes(x = error_qmd, label = Format(error_qmd)),
       position = position_nudge(y = ynudge),
-      label.r = unit(0, 'pt'), size = textsize, fontface = 'bold',
+      label.r = unit(0, 'pt'), size = textsize, fontface = 'italic',
       label.padding = unit(1, 'pt')
     ) +
     geom_text(
       aes(x = error_qlo-0.3, label = Format(error_qlo)),
       position = position_nudge(y = ynudge),
-      hjust = 'right', size = textsize
+      hjust = 'right', size = textsize, fontface = 'italic'
     ) +
     geom_text(
       aes(x = error_qhi+0.3, label = Format(error_qhi)),
       position = position_nudge(y = ynudge),
-      hjust = 'left', size = textsize
+      hjust = 'left', size = textsize, fontface = 'italic'
     ) +
     # plot bias
     geom_segment(
       aes(x = bias_qlo, xend = bias_qhi),
       position = position_nudge(y = -ynudge),
-      size = sizesmall
+      size = sizelarge
     ) +
     geom_label(
       aes(x = bias_qmd, label = Format(bias_qmd)),
       position = position_nudge(y = -ynudge),
-      label.r = unit(0, 'pt'), size = textsize,
+      label.r = unit(0, 'pt'), size = textsize, fontface = 'bold',
       label.padding = unit(1, 'pt')
     ) +
     geom_text(
@@ -228,12 +229,35 @@ ExportFigure(
 
 # Per-timestep prediction error -----------------------------------
 
-plotly::ggplotly(
+dat$weeklyerrors <-
   dat$residual_death_week$residual_summary %>%
-    group_by(model_id, weeks_since_test_start) %>%
-    summarise(
-      m = mean(mape_death, na.rm = TRUE)
-    ) %>%
-    ggplot(aes(x = weeks_since_test_start, y = m, color = model_id)) +
-    geom_point()
-  )
+  group_by(model_id, weeks_since_test_start) %>%
+  summarise(mape = quantile(mape_death, na.rm = TRUE, p = 0.5)) %>%
+  ungroup() %>%
+  left_join(cnst$model_metadata, c('model_id' = 'code')) %>%
+  mutate(model_id = fct_reorder(model_id, order_1))
+
+dat$weeklyerrors_background <-
+  dat$weeklyerrors %>%
+  select(weeks_since_test_start, mape) %>%
+  expand_grid(model_id = unique(dat$weeklyerrors$model_id))
+
+fig$weeklyerrors <-
+  dat$weeklyerrors %>%
+  ggplot(aes(x = weeks_since_test_start + glob$start_of_test_iso_week, y = mape)) +
+  geom_point(
+    color = 'grey', size = 0.5,
+    data = dat$weeklyerrors_background
+  ) +
+  geom_line(size = 1) +
+  facet_wrap(~model_id) +
+  figspec$MyGGplotTheme() +
+  labs(x = 'Week of year', y = 'MAPE')
+
+ExportFigure(
+  fig$weeklyerrors, path = path$out, filename = 'weeklyerrors',
+  add_date = FALSE,
+  device = 'pdf',
+  width = figspec$fig_dims$width,
+  height = figspec$fig_dims$width*0.6
+)

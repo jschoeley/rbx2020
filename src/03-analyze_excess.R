@@ -31,7 +31,7 @@ cnst <- within(cnst, {
   region_metadata = read_csv('src/region_metadata.csv')
   models_to_include = model_metadata[model_metadata$include==1,][['code']]
   # model to compare other model predictions to
-  reference_model_name = quo(`AVGc5`)
+  reference_model_name = quo(`AVRc5`)
 })
 
 dat <- list()
@@ -58,28 +58,8 @@ dat$predictions_covid <-
     weeks_since_test_start < cnst$n_weeks_into_test
   )
 
-# Poisson sampling of expected deaths -----------------------------
-
-# replicate expected deaths from Poisson distribution
-dat$predictions_covid_replicate <-
-  dat$predictions_covid %>%
-  select(
-    model_id,
-    region_iso, sex, age_group,
-    date, weeks_since_test_start,
-    iso_year, iso_week, epi_week, epi_year,
-    obs_id, model_id,
-    deaths_observed, deaths_predicted
-  ) %>%
-  expand_grid(sim_id = 1:cnst$sim_rep) %>%
-  group_by(obs_id, model_id) %>%
-  mutate(
-    deaths_predicted_replicate =
-      # draw from Poisson distribution with same mean as
-      # baseline prediction
-      rpois(n = cnst$sim_rep, lambda = deaths_predicted)
-  ) %>%
-  ungroup()
+# save memory
+dat$fitted_models <- NULL
 
 # Calculate excess deaths -----------------------------------------
 
@@ -90,7 +70,7 @@ dat$excess_deaths <-
     date = date,
     observed_deaths = deaths_observed,
     expected_deaths = deaths_predicted,
-    simulated_deaths = deaths_predicted_replicate,
+    simulated_deaths = deaths_simulated,
     sim_id = sim_id,
     model_id,
     region_iso
@@ -103,12 +83,22 @@ dat$excess_deaths_age_sex <-
     date = date,
     observed_deaths = deaths_observed,
     expected_deaths = deaths_predicted,
-    simulated_deaths = deaths_predicted_replicate,
+    simulated_deaths = deaths_simulated,
     sim_id = sim_id,
     model_id,
     region_iso, sex, age_group
   )
 
+# save calculated excess
+saveRDS(dat$excess_deaths, file = glue('{path$out}/excess_deaths.rds'))
+saveRDS(dat$excess_deaths_age_sex, file = glue('{path$out}/excess_deaths_age_sex.rds'))
+
+# save memory
+dat$predictions_covid <- NULL
+dat$predictions_covid_replicate <- NULL
+
+#dat$excess_deaths <- readRDS(glue('{path$out}/excess_deaths.rds'))
+#dat$excess_deaths_age_sex <- readRDS(glue('{path$out}/excess_deaths_age_sex.rds'))
 
 # Countries where models disagree ---------------------------------
 
@@ -118,7 +108,7 @@ dat$excess_deaths %>%
   summarise(
     # does any model give significant excess deaths?
     any_excess = any(cumpscore_q05 > 0),
-    # do all models give sigificant excess deaths?
+    # do all models give significant excess deaths?
     all_excess = all(cumpscore_q05 > 0),
     # which models give significant excess deaths?
     excess_which = paste0(model_id[cumpscore_q05 > 0], collapse = ' '),
@@ -126,6 +116,14 @@ dat$excess_deaths %>%
     no_excess_which = paste0(model_id[cumpscore_q05 <= 0], collapse = ' ')
   ) %>%
   filter(all_excess == FALSE)
+
+
+# Examples --------------------------------------------------------
+
+# Belgium end of year excess deaths
+dat$excess_deaths %>%
+  filter(region_iso == 'BE', date == max(date)) %>%
+  select(model_id, cumexcess_expected, cumexcess_q05, cumexcess_q95)
 
 # Figure excess ---------------------------------------------------
 
@@ -236,7 +234,7 @@ ExportFigure(
 dat$fig_rank$main <-
   dat$excess_deaths %>%
   left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
-  mutate(model_id = fct_reorder(model_id, order_2)) %>%
+  mutate(model_id = fct_reorder(model_id, order_1)) %>%
   filter(date == max(date)) %>%
   select(region_iso, model_id, cumpscore_expected) %>%
   arrange(model_id) %>%
@@ -338,9 +336,8 @@ PlotLogratios <- function (
     # misc
     scale_x_continuous(breaks = seq(-10, 10, 5)) +
     coord_cartesian(clip = 'off', xlim = c(-10,10)) +
-    figspec$MyGGplotTheme(show_legend = FALSE, axis_title_just = 'cc') +
-    scale_color_brewer(type = 'qual', palette = 5) +
-    labs(y = NULL, x = expression('%'~Delta))
+    figspec$MyGGplotTheme(show_legend = FALSE) +
+    scale_color_brewer(type = 'qual', palette = 5)
   
   list(dat = logratios, fig = fig)
   
@@ -422,13 +419,14 @@ fig$baselinediff_d <- PlotLogratios(dat$fig_baselinediff_d)
 
 fig$baselinediff <-
   fig$baselinediff_a$fig +
-  labs(subtitle = 'a. total deaths by country') +
+  labs(subtitle = 'a. total deaths by country', y = 'Model', x = NULL) +
   fig$baselinediff_b$fig +
-  labs(subtitle = 'b. total deaths by country and stratum') +
+  labs(subtitle = 'b. total deaths by country and stratum', y = NULL, x = NULL) +
   fig$baselinediff_c$fig +
-  labs(subtitle = 'c. weekly deaths by country') +
+  labs(subtitle = 'c. weekly deaths by country', y = NULL, x = NULL) +
   fig$baselinediff_d$fig +
-  labs(subtitle = 'd. weekly deaths by country and stratum') +
+  labs(subtitle = 'd. weekly deaths by country and stratum', y = NULL,
+       x = 'Percent difference of predicted deaths against AVRc5') +
   plot_layout(ncol = 2, byrow = TRUE)
 fig$baselinediff
 
@@ -445,7 +443,7 @@ ExportFigure(
 dat$fig_rank_strata$main <-
   dat$excess_deaths_age_sex %>%
   left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
-  mutate(model_id = fct_reorder(model_id, order_2)) %>%
+  mutate(model_id = fct_reorder(model_id, order_1)) %>%
   filter(date == max(date)) %>%
   select(region_iso, sex, age_group, model_id, cumpscore_expected) %>%
   arrange(model_id) %>%
