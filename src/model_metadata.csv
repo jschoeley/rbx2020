@@ -1,8 +1,8 @@
 code,name,description,include,order_1,order_2,highlight
-AVRc3,3-year avg. weekly deaths,3 year average weekly death counts,0,1,11,a
-AVRc5,5-year avg. weekly deaths,5 year average weekly death counts,1,2,12,a
-AVRr3,3-year avg. weekly mortality,3 year average weekly death rates,0,3,1,a
-AVRr5,5-year avg. weekly mortality,5 year average weekly death rates,1,4,2,a
+AVGc3,3-year avg. weekly deaths,3 year average weekly death counts,0,1,11,a
+AVGc5,5-year avg. weekly deaths,5 year average weekly death counts,1,2,12,a
+AVGr3,3-year avg. weekly mortality,3 year average weekly death rates,0,3,1,a
+AVGr5,5-year avg. weekly mortality,5 year average weekly death rates,1,4,2,a
 SRFcem,Serfling Euromomo,Euromomo style Serfling regression,1,5,9,b
 SRFc,Serfling w/o exposures,Serfling quasipoisson regression on death counts,1,6,10,b
 SRFr,Serfling with exposures,Serfling quasipoisson regression on death counts with exposures,1,7,3,b

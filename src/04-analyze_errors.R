@@ -46,7 +46,7 @@ dat$cv_test <-
 
 # Calculate errors on multiple aggregation levels -----------------
 
-# residuals by week, age and sex
+# residuals and error measures by week, age and sex
 dat$residual_death_week_age_sex <-
   DeathsResiduals(
     dat$cv_test,
@@ -168,7 +168,7 @@ PlotErrorsAndBias <- function (df_errors, error_measure, bias_measure, xlab) {
   
 }
 
-# error & bias, total, country level
+# error & bias of annual deaths on country level
 fig$errorbias_a <-
   dat$residual_death_week$residual_summary %>%
   filter(weeks_since_test_start == 45) %>%
@@ -178,44 +178,31 @@ fig$errorbias_a <-
     xlab = NULL
   )
 
-# error & bias, total, stratum level
+# error & bias of weekly deaths on country level
 fig$errorbias_b <-
-  dat$residual_death_week_age_sex$residual_summary %>%
-  filter(weeks_since_test_start == 45) %>%
-  PlotErrorsAndBias(
-    error_measure = mape_cumdeath,
-    bias_measure = mpe_cumdeath,
-    xlab = NULL
-  )
-
-# error & bias, weekly, country level
-fig$errorbias_c <-
   dat$residual_death_week$residual_summary %>%
+  # here we average the weekly M(A)PE over weeks
+  # so that we have a single average weekly M(A)PE per country
+  # this is the same as having averaged the errors over
+  # weeks directly in the M(A)PE calculation as the number of
+  # weeks is the same across the CV sets
+  group_by(model_id, region_iso) %>%
+  summarise(
+    mape_death = mean(mape_death),
+    mpe_death = mean(mpe_death)
+  ) %>%
   PlotErrorsAndBias(
-    error_measure = mape_cumdeath,
-    bias_measure = mpe_cumdeath,
-    xlab = NULL
-  )
-
-# error & bias, weekly, stratum level
-fig$errorbias_d <-
-  dat$residual_death_week_age_sex$residual_summary %>%
-  PlotErrorsAndBias(
-    error_measure = mape_cumdeath,
-    bias_measure = mpe_cumdeath,
+    error_measure = mape_death,
+    bias_measure = mpe_death,
     xlab = 'MPE/MAPE'
   )
 
 # assemble multi-panel figure 3
 fig$errorbias <-
   fig$errorbias_a$fig +
-  labs(subtitle = 'a. total deaths by country', y = 'Model') +
+  labs(subtitle = 'a. annual deaths by country', y = 'Model') +
   fig$errorbias_b$fig +
-  labs(subtitle = 'b. total deaths by country and stratum') +
-  fig$errorbias_c$fig +
-  labs(subtitle = 'c. weekly deaths by country') +
-  fig$errorbias_d$fig +
-  labs(subtitle = 'd. weekly deaths by country and stratum') +
+  labs(subtitle = 'b. weekly deaths by country') +
   plot_layout(ncol = 2, byrow = TRUE)
 fig$errorbias
 
@@ -224,7 +211,135 @@ ExportFigure(
   add_date = FALSE,
   device = 'pdf',
   width = figspec$fig_dims$width,
-  height = figspec$fig_dims$width
+  height = figspec$fig_dims$width*0.5
+)
+
+# Figure errorbias over strata ------------------------------------
+
+PlotErrorsAndBiasStrata <- function (df_errors, error_measure, bias_measure, xlab) {
+  
+  require(tidyverse)
+  
+  Format <- function (x) { formatC(x, format = 'f', digits = 1) }
+  
+  observed_errors <-
+    df_errors %>%
+    select(
+      age_group, sex,
+      model = model_id,
+      error_measure = {{error_measure}},
+      bias_measure = {{bias_measure}}
+    )
+  
+  # summarise errors over countries
+  summarised_errors <-
+    observed_errors %>%
+    group_by(model, age_group, sex) %>%
+    summarise(
+      error_qlo = quantile(error_measure, p = 0.25, na.rm = TRUE),
+      error_qmd = quantile(error_measure, p = 0.5, na.rm = TRUE),
+      error_qhi = quantile(error_measure, p = 0.75, na.rm = TRUE),
+      bias_qlo = quantile(bias_measure, p = 0.25, na.rm = TRUE),
+      bias_qmd = quantile(bias_measure, p = 0.5, na.rm = TRUE),
+      bias_qhi = quantile(bias_measure, p = 0.75, na.rm = TRUE)
+    ) %>%
+    ungroup() %>%
+    left_join(cnst$model_metadata, c('model' = 'code')) %>%
+    mutate(
+      model =
+        fct_reorder(model, order_1)
+    )
+  
+  ynudge <- 0.2
+  sizelarge <- 1
+  sizesmall <- 0.6
+  textsize <- 2
+  sizeribbon <- 7
+  
+  fig <-
+    summarised_errors %>%
+    ggplot(aes(y = model, yend = model)) +
+    # indicate rows
+    geom_segment(
+      aes(color = highlight),
+      x = -Inf, xend = Inf, size = sizeribbon
+    ) +
+    geom_vline(xintercept = 0, color = 'grey50', size = 1.5) +
+    # plot errors
+    geom_segment(
+      aes(x = error_qlo, xend = error_qhi),
+      position = position_nudge(y = ynudge),
+      size = sizesmall
+    ) +
+    geom_label(
+      aes(x = error_qmd, label = Format(error_qmd)),
+      position = position_nudge(y = ynudge),
+      label.r = unit(0, 'pt'), size = textsize, fontface = 'italic',
+      label.padding = unit(1, 'pt')
+    ) +
+    geom_text(
+      aes(x = error_qlo-0.3, label = Format(error_qlo)),
+      position = position_nudge(y = ynudge),
+      hjust = 'right', size = textsize, fontface = 'italic'
+    ) +
+    geom_text(
+      aes(x = error_qhi+0.3, label = Format(error_qhi)),
+      position = position_nudge(y = ynudge),
+      hjust = 'left', size = textsize, fontface = 'italic'
+    ) +
+    # plot bias
+    geom_segment(
+      aes(x = bias_qlo, xend = bias_qhi),
+      position = position_nudge(y = -ynudge),
+      size = sizelarge
+    ) +
+    geom_label(
+      aes(x = bias_qmd, label = Format(bias_qmd)),
+      position = position_nudge(y = -ynudge),
+      label.r = unit(0, 'pt'), size = textsize, fontface = 'bold',
+      label.padding = unit(1, 'pt')
+    ) +
+    geom_text(
+      aes(x = bias_qlo-0.3, label = Format(bias_qlo)),
+      position = position_nudge(y = -ynudge),
+      hjust = 'right', size = textsize
+    ) +
+    geom_text(
+      aes(x = bias_qhi+0.3, label = Format(bias_qhi)),
+      position = position_nudge(y = -ynudge),
+      hjust = 'left', size = textsize
+    ) +
+    # facets
+    facet_grid(age_group ~ sex) +
+    # misc
+    figspec$MyGGplotTheme(show_legend = FALSE) +
+    scale_x_continuous(breaks = seq(-10, 10, 5)) +
+    scale_color_brewer(type = 'qual', palette = 5) +
+    labs(y = NULL, x = xlab) +
+    coord_cartesian(clip = 'off', xlim = c(-10,10))
+  
+  list(errors = summarised_errors, fig = fig)
+  
+}
+
+# model-specific error & bias
+# annual death counts
+# shown separately by age and sex
+fig$errorbias_strata <-
+  dat$residual_death_week_age_sex$residual_summary %>%
+  filter(weeks_since_test_start == 45) %>%
+  PlotErrorsAndBiasStrata(
+    error_measure = mape_cumdeath,
+    bias_measure = mpe_cumdeath,
+    xlab = 'MPE/MAPE'
+  )
+
+ExportFigure(
+  fig$errorbias_strata$fig, path = path$out, filename = 'errorbias_strata',
+  add_date = FALSE,
+  device = 'pdf',
+  width = figspec$fig_dims$width,
+  height = figspec$fig_dims$width*1.3
 )
 
 # Per-timestep prediction error -----------------------------------

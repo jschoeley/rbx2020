@@ -27,7 +27,7 @@
 \begin{titlepage}
 
 {\textbf{Title:}
-Robustness and bias of excess death estimates under varying model specifications
+Robustness and bias of European excess death estimates in 2020 under varying model specifications
 \par\medskip}
 
 {\textbf{Authors:}
@@ -48,7 +48,7 @@ excess deaths; COVID-19; Serfling model; cross-validation; robustness
 \par\medskip}
 
 {\textbf{Abstract:}
-Various procedures are in use to calculate excess deaths during the ongoing COVID-19 pandemic. Using weekly death counts from 20 European countries, we evaluate the robustness of excess death estimates to the choice of model for expected deaths and perform a cross-validation analysis to assess the error and bias in each model's predicted death counts. We find that the different models produce very similar patterns of weekly excess deaths but disagree substantially on the level of excess. The country ranking of percent excess death in 2020 is sensitive to the exclusion of an exposure variable but otherwise stable across models that do account for population structure. The five-year average death rate model consistently produces the lowest excess death estimates, whereas high excess deaths are produced by the popular five-year average death count and Euromomo models. Cross-validation revealed these estimates to be biased under a causal interpretation of "expected deaths had COVID-19 not happened."
+Various procedures are in use to calculate excess deaths during the ongoing COVID-19 pandemic. Using weekly death counts from 20 European countries, we evaluate the robustness of excess death estimates to the choice of model for expected deaths and perform a cross-validation analysis to assess the error and bias in each model's predicted death counts. We find that the different models produce very similar patterns of weekly excess deaths but disagree substantially on the level of excess. While the exact country ranking along percent excess death in 2020 is sensitive to the choice of model the top and bottom ranks are robustly identified. On the country level, the five-year average death rate model tends to produce the lowest excess death estimates, whereas high excess deaths are produced by the popular five-year average death count and Euromomo models. Cross-validation revealed these estimates to be biased under a causal interpretation of "expected deaths had COVID-19 not happened."
 \par\medskip}
 
 % \noindent\begin{tabular}{@{}ll}
@@ -74,14 +74,13 @@ As the literature on excess deaths in 2020 is dominated by simple average or reg
 \citep{Barnard2020, Weinberger2020, Woolf2020, EuroMoMo2020, Arolas2021}.
 Generalized additive models relax the strict specifications of the Serfling model and allow for smooth long-term and seasonal effects \citep{Aburto2021, Scortichini2020}. These models may be further elaborated via the inclusion of temperature effects, autoregressive residuals, adjustments for bank holidays, and Bayesian inference \citep{Kontis2020}.
 
-Having chosen 10 model specifications reflecting the heterogeneity in the literature (Table \ref{tab:models}), we probe each model for a tendency to produce high or low estimate of expected and conversely excess deaths, both weekly and total. We ask if the ranking of European countries along the total percentage of excess deaths in 2020 differs under different baseline models, and we identify those countries where there is disagreement about the existence of excess deaths among the models.
+Having chosen 9 model specifications reflecting the heterogeneity in the literature (Table \ref{tab:models}), we probe each model for a tendency to produce high or low estimate of expected and conversely excess deaths, both weekly and total. We ask if the ranking of European countries along the total percentage of excess deaths in 2020 differs under different baseline models, and we identify those countries where there is disagreement about the existence of excess deaths among the models.
 
 When excess death numbers vary by models, the question arises which model to trust. In line with \cite{Kontis2020} and \cite{Modi2020} we argue that the challenge of estimating the expected number of weekly deaths in the year 2020, given that COVID had not occurred, is a classical forecasting challenge, and thus, the models can be validated by testing their predictions on past data. To that end, we construct a cross-validation challenge, where each model is fitted on seven years of weekly death counts and is then tasked to predict the next 52 weeks from that series. The error and bias of any model can then be estimated by comparing the model predictions with the observed data. If a model's predictions tended to over/underestimate weekly deaths in the past, we argue that this model also over/underestimates the expected deaths in 2020 under the counterfactual no-COVID scenario, thereby biasing excess deaths.
 
 \section*{Data and Methods}
 
 \subsection*{Raw and derived data}
-
 
 To replicate the more elaborate expected death regression models, we collected cross-country data on weekly death counts and population exposure by age and sex, along with information on the timing of public holidays and weekly population-weighted temperature anomalies.
 
@@ -103,7 +102,7 @@ We used the "Nager.Date" software \citep{Hager2021} to determine for each week, 
 
 \subsection*{Model choice}
 
-We compare the 10 different models listed in Table \ref{tab:models} in terms of their predicted death counts and their prediction error on historical data. The models are chosen to represent the range of approaches in the literature on excess deaths estimation since the start of the pandemic, from very simple to elaborate, but we do not claim to have exactly replicated any published analysis. All models are either fitted separately for each combination of age and sex or feature interaction terms to the same effect. Further details are given in the supplementary materials. We chose not to include a flu-epidemic variable in any of our models due to endogeneity. Mitigation measures put in place to combat the spread of the Coronavirus also have an impact on the spread of other viruses \citep{Cowling2020, Soo2020}. Therefore, if the expected deaths are to be interpreted as "deaths if COVID had not happened", including post-covid influenza observations is not admissible.
+Expected deaths and associated excess deaths statistics were computed under nine different models listed in Table \ref{tab:models}. The models were chosen to represent the range of approaches in the literature on excess deaths estimation since the start of the pandemic, from very simple to elaborate. All models predict age and sex specific expected death counts and are fitted separately for each of the 20 countries. Detailed model specifications are given in the appendix.
 
 \begin{table}[H]
 \small
@@ -120,16 +119,16 @@ We compare the 10 different models listed in Table \ref{tab:models} in terms of 
 (AVGc5) 5 year average death counts\par
 (AVGr5) 5 year average death rates
  &
- simple mean over the weekly deaths counts or death rates in the preceding years
+ Average over the weekly deaths counts or rates in the preceding 5 years implemented as quasi-Poisson GLM with week-of-year coefficients
  &
 \cite{Modig2020}, \cite{Stang2020}, \cite{Campbell2021}\\ \midrule
 % Serfling
 \textbf{Serfling Model}\par
 (SRFc) without exposures\par
-(SRFcem) Euromomo style, i.e. no exposures, no bank holiday coefficient, fitted over 5 years on weeks without flu-activity\par
+(SRFcem) Euromomo style, i.e. no exposures, fitted only on weeks without flu-activity\par
 (SRFr) with exposures
 &
-Poisson regression on death counts with log-linear long term trend and Fourier-term seasonality
+Quasi-Poisson regression on death counts with log-linear long term trend, AIC selected Fourier-term seasonality, and public-holiday coefficients
 &
 \cite{Barnard2020}, \cite{Weinberger2020}, \cite{Woolf2020}, \cite{EuroMoMo2020}, \cite{Arolas2021}
 \\ \midrule
@@ -138,102 +137,176 @@ Poisson regression on death counts with log-linear long term trend and Fourier-t
 (GAMr) without temperature anomaly predictor\par
 (GAMrt) with temperature anomaly predictor as smoothly varying coefficient over week of year
 &
-Poisson regression on death counts with log-linear long term trend and cyclical spline seasonality
+Quasi-Poisson regression on death counts with log-linear long term trend, penalized cyclical spline seasonality, and public-holiday coefficients
 &
 \cite{Aburto2021}, \cite{Scortichini2020}
 \\ \midrule
 % LGM
 \textbf{Latent Gaussian Model}\par
 (LGMr) without temperature anomaly predictor\par
-(LRMrt) with temperature anomaly predictor as varying coefficient over week of year implemented as cyclic random walk\par
-(LGMrt2) same as LRMrt with order 2 autoregressive long term trend and temperature anomaly random walk
+(LGMrt) with temperature anomaly predictor as varying coefficient over week of year implemented as cyclic random walk\par
 &
-Bayesian Poisson regression on death counts with autoregressive long term trend and time-varying seasonality
+Bayesian Poisson regression on death counts with autoregressive trend, non-parametric time-varying seasonality, and public-holiday coefficients
 &
 \cite{Kontis2020}
 \\ \bottomrule
 \end{tabularx}
 \end{table}
 
+
+With the exception of the Latent Gaussian Models (LGMr, LGMrt) all models were specified as quasi-Poisson regressions on weekly death counts $D_i$ of the form
+
+\begin{equation}
+\begin{aligned}
+  D_i &\sim \text{Pois}(\lambda_i, \phi) \\
+  \lambda_i &= \exp(\eta_i),
+\end{aligned}
+\label{eq:quasipoisson}
+\end{equation}
+
+where $\lambda_i$ is the expected death count, $\phi$ is the dispersion factor, and $\eta_i$ is the linear predictor on a log-scale. While we considered employing the negative binomial distribution instead, convergence issues due to sporadic underdispersion informed our choice of the more robust quasi-Poisson model.
+
+For the \emph{5 year average death count model} (AVGc5) we specified
+
+\begin{equation}
+  \eta_i = \alpha_{j[i]w[i]},
+  \label{eq:AVGc5}
+\end{equation}
+
+where $\alpha_{j[i]w[i]}$ is a coefficient for iso-week $w$ and sex$\times$age stratum $j$ of observation $i$ within some country. The model was fit over a period of five years.
+
+Log-person-weeks exposure $\log(E_i)$ were added as an offset to (\ref{eq:AVGc5}), yielding the \emph{5 year average death rate model}
+
+\begin{equation}
+  \eta_i = \alpha_{j[i]w[i]} + \log(E_i).
+  \label{eq:AVGr5}
+\end{equation}
+
+The \emph{Serfling with exposures} (SRFr) model was specified as
+
+\begin{equation}
+  \begin{aligned}
+    \eta_i =& \alpha_{j[i]} + \beta_{j[i]}t_i + \\
+  & \gamma_{1,j[i]}\sin\left(\frac{2\pi}{52}w_i\right) +
+    \gamma_{2,j[i]}\cos\left(\frac{2\pi}{52}w_i\right) +
+    \gamma_{3,j[i]}\sin\left(\frac{2\pi}{26}w_i\right) +
+    \gamma_{4,j[i]}\sin\left(\frac{2\pi}{26}w_i\right) + \\
+  & \delta_{j[i]k[i]} + \log(E_i).
+  \end{aligned}
+  \label{eq:SRFr}
+\end{equation}
+
+Model (\ref{eq:SRFr}) features log-linear time trends $\beta_{j[i]}$ over weeks $t_i$ since the earliest observation, parametric seasonal effects $\gamma_{j[i]}$, and the effect of a public holiday $\delta_{j[i]k[i]}$ on the expected death counts, where $k$ denotes the type of holiday. The model is completely stratified over sex and age groups $j$. Within each stratum we selected the number of seasonal terms (no seasonality or $\gamma_{1,2}$ or $\gamma_{1,2,3,4}$) via AIC using the likelihood from an initial Poisson regression without overdispersion. Omitting the term $\log(E_i)$ from (\ref{eq:SRFr}) yields the \emph{Serfling without exposures} (SRFc) model. For the \emph{Euromomo style Serfling model} (SRFcem) we dropped the exposure as well and only fitted the model on weeks 15 through 26 and 36 through 45. All Serfling models were fit via the \texttt{glm} function in \texttt{R}.
+
+The \emph{Generalized Additive Model with temperature anomaly} (GAMrt) allows for non-parametric, smooth seasonal effects and adjusts for the effect of extreme temperature on weekly death counts. We specified the model as
+
+\begin{equation}
+  \eta_i = \alpha_{j[i]} + \beta_{j[i]}t_i + \gamma_{j[i]w[i]} + \nu_{w[i]} T_i + \delta_{j[i]k[i]} + \log E_i,
+  \label{eq:GAMrt}
+\end{equation}
+
+where $\gamma_{j[i]w[i]} = f_{j[i]}(w_i)$ is a stratum specific seasonality term implemented as a cyclical penalized spline with 12 knots spaced in equal distance over the weeks of a year $w_i$, and $\nu_{w[i]}=g(w_i)$ is the temperature anomaly coefficient varying smoothly over $w_i$ in a cyclical fashion. For the \emph{Generalized Additive Model without temperature anomaly} (GAMr) we omitted this term. Analogous to the model (\ref{eq:SRFr}) we specified a log-linear trend, public holiday intercepts, and an offset controlling for population exposure. The model was fit via the \texttt{gam} function from the \texttt{mgcv} library in \texttt{R}.
+
+The \emph{Latent Gaussian Model with temperature anomaly} (LGMrt) follows the specification by \cite{Kontis2020}. It features a nonparametric seasonal effect which may vary over time and an autoregressive trend. The model is fitted separately by age group and sex and, omitting the subscript $j[i]$, can be written as
+
+\begin{equation}
+  \begin{aligned}
+    D_i &\sim \text{Pois}(\lambda_i) \\
+    \lambda_i &= \exp(\eta_i) \\
+    \eta_i =& \alpha + \beta t_i +
+    \zeta_{t[i]} + \gamma_{t[i]} +
+    \nu_{w[i]} T_i + \delta_{k[i]} + \varepsilon_i + \log E_i,
+  \end{aligned}
+  \label{eq:LGMrt}
+\end{equation}
+
+where $\beta t_i$ is a simple log-linear trend over time and $\zeta_{t[i]} \sim \text{Norm}(\varphi \zeta_{t[i]-1}, \sigma^2_\zeta)$ is a first order autoregressive trend. In contrast with the other models over-dispersion is directly included in the linear predictor in form of the unstructured error term $\varepsilon \sim \text{Norm}(0, \sigma^2_\varepsilon)$. Seasonality is captured with a time-varying random coefficient $\gamma_{t[i]}$, following \cite{Rue2005} section 3.5, where the summed effect of every consecutive series of 52 weeks on mortality is distributed as $\sum_{s=0}^{51} \gamma_{t[i]+s} \sim \text{Norm}(0, \sigma^2_\gamma)$. The effect of temperature anomalies on weekly mortality is captured by the varying coefficient $\nu_{w[i]} \sim \text{Norm}(\nu_{w[i]-1}, \sigma^2_\nu)$, specified as a circular first order random walk over week of year. The temperature effect was dropped for the \emph{Latent Gaussian Model without temperature anomaly} (LGMr). The models were fit with the \texttt{INLA} library \cite{Rue2009, Rue2021} in \texttt{R}.
+
 \subsection*{Excess death measures}
 
-We define excess deaths $D^*$ in a given week $w$ and stratum $j$ as
-$D_{wj}^* = D_{wj}-\widehat{D}_{wj}$,
-where $\widehat{D}$ are the expected deaths under a given model. This definition as a model residual allows capturing eventual mortality displacement effects where a positive excess in part of the year can be followed by negative excess in later weeks. The total number of excess deaths over period $[a,b]$ are given by
-$D_{[a,b], j}^* = D_{[a,b], j} - \widehat{D}_{[a,b], j}$,
+We defined excess deaths $D^*$ in a given week $t$ and stratum $j$ as
+$D_{tj}^* = D_{tj}-\lambda_{tj}$,
+where $D$ is the observed death count and $\lambda$ are the expected deaths under a given model. This definition as a model residual allows to capture mortality displacement effects where a positive excess in part of the year can be followed by negative excess in later weeks. The total number of excess deaths over period $[a,b]$ are given by
+$D_{[a,b], j}^* = D_{[a,b], j} - \lambda_{[a,b], j}$,
 where
-$D_{[a,b], j}=\sum_{w=a}^b D_{wj}$ and
-$\widehat{D}_{[a,b], j}=\sum_{w=a}^b \widehat{D}_{wj}$.
-Following a common strategy, expected and observed deaths may be summed over strata to estimate the excess at a higher aggregation level \citep{Barnard2020, Aburto2021, Kontis2020, Weinberger2020}.
+$D_{[a,b], j}=\sum_{t=a}^b D_{tj}$ and
+$\lambda_{[a,b], j}=\sum_{t=a}^b \lambda_{tj}$.
+Following a common strategy, expected and observed deaths were summed over strata to estimate the excess at a higher aggregation level \citep{Barnard2020, Aburto2021, Kontis2020, Weinberger2020}.
 
 To facilitate comparisons between countries, we report the weekly percentage increase of observed deaths over expected deaths,
-$P_{wj}=\frac{D_{wj}^*}{\widehat{D}_{wj}}$,
-the so-called "P-score". For a sequence of weeks $[a,b]$ we calculate the cumulative P-score from the total excess and expected deaths over that period,
-$P_{[a,b], j}=\frac {D_{[a,b], j}^*} {\widehat{D}_{[a,b], j}}$.
+$P_{tj}=\frac{D_{tj}^*}{\lambda_{tj}}$,
+the so-called "P-score". For a sequence of weeks $[a,b]$ we calculated the cumulative P-score from the total excess and expected deaths over that period,
+$P_{[a,b], j}=\frac {D_{[a,b], j}^*} {\lambda_{[a,b], j}}$.
 
-Any prediction intervals around the quantities above are derived from repeated samples of expected deaths from a Poisson distribution with rate $\widehat{D}_{wj}$. The resulting uncertainty statements should be understood as lower-bound estimates as the Poisson sampling, while easily implemented for any algorithm which predicts death counts, ignores overdispersion in the outcome distribution and uncertainty around model parameters.
+\subsection*{Prediction intervals}
+
+Prediction intervals around the measures of excess death were computed via simulation. We first sampled 500 sets of parameter estimates, $s=\{1,\ldots,500\}$, either from a multivariate normal distribution $\text{Norm}(\boldsymbol{\beta}, \boldsymbol{\Sigma})$, with $\boldsymbol{\beta}$ being the vector of estimated parameters, and $\boldsymbol{\Sigma}$ the variance-covariance matrix of the fitted model, or, in case of the Latent Gaussian Models, from the posterior distribution of the parameters. For each of the 500 simulated sets of parameters we calculated the expected weekly death count $\lambda_{tj}^s$ and then sampled a single simulated death count $d_{tj}^s$ from a negative-binomial distribution with mean equal to $\lambda_{tj}^s$, and variance equal to $\lambda_{tj}^s\phi$, matching the characteristic moments of the quasi-Poisson distribution. In case of under-dispersion, where $\phi<1$, and for the Latent Gaussian Models, we sampled from a Poisson distribution with rate $\lambda_{tj}^s$. The simulated death counts $d_{tj}^s$ were then substituted into the excess death formulas in place of the expected deaths $\lambda_{tj}$ and the resulting distribution of excess summarized by its quantiles.
 
 \subsection*{Cross-validation}
 
-Time series of weekly death counts and co-variates were split into five cross-validation sets. The training period starts at week 27 of a year and ends after seven fully observed summer to summer seasonal cycles with the beginning of week 8 of a year. After fitting the model, weekly death counts were predicted for 45 weeks following week 8 of the last year in the training set. The starting years for the five cross-validation series were 2007 to 2011. This particular cross-validation setup has been chosen to mirror the task of predicting weekly deaths in 2020, given years of data observed until shortly before the outbreak of the pandemic.
+In order to assess the accuracy of the predicted death counts from each model we performed a cross-validation analysis. Time series of weekly death counts and co-variates were split into five cross-validation sets. The training period starts at week 27 of a year and ends after seven fully observed summer to summer seasonal cycles with the beginning of week 8 of a year. After fitting the model, weekly death counts were predicted for 45 weeks following week 8 of the last year in the training set. The starting years for the five cross-validation series were 2007 to 2011. This particular cross-validation setup has been chosen to mirror the task of predicting weekly deaths in 2020, given data observed until shortly before the outbreak of the pandemic.
+
+We compared the expected death counts $\lambda_i$ with the observed death counts $D_i$ in the test set and quantified the prediction bias via the mean percentage error, $\text{MPE} = 1/n\sum_{i=1}^n \frac {D_i - \lambda_i} {D_i}$, and the prediction error via the mean absolute percentage error, $\text{MAPE} = 1/n\sum_{i=1}^n\frac {|D_i - \lambda_i|} {D_i}$, where $i$ runs over the $n$ predictions in the five test sets.
+
+All predictions were made by country, week, sex, and age. To facilitate presentation we first summed the observed and predicted death counts a) over weeks, sex, and age (annual deaths by country), and b) over sex and age alone (weekly deaths by country), then calculated the aggregated prediction bias and error by country, and finally summarized the distribution of these aggregated measures of model fit across countries via quantiles. Stratum-specific prediction errors can be found in the appendix.
 
 \section*{Results}
 
 % overall variability of excess deaths under different models
 
-Models differed in their estimated level of excess deaths while generally agreeing on the weekly pattern of excess (Figure \ref{fig:excess}). On the country level, the range of weekly and annual percent excess deaths across models was between 5 and 10\%. The average death rate model produced the lowest excess death estimate for all countries, whereas the maximum varied, with the Euromomo style Serfling and the average death count model producing the highest excess in 15 out of 20 countries. Taking Belgium as an example of a region with pronounced mortality, central estimates of excess deaths by the end of 2020 range from 14,968 (.95 PI: 14,472--15,510) under the average death rate model to 21,485 (.95 PI: 21,068--21,851) under a Euromomo style Serfling regression. Consequently, models may disagree regarding the existence of significantly elevated mortality in countries with comparatively few registered COVID deaths. We found such disagreement in Denmark, Finland, and Latvia, where annual P-scores were not significantly elevated under the average death rate model. Norway is the only country under consideration where all models agreed that deaths in 2020 had not been significantly elevated.
-
 \begin{figure}
-\caption{Weekly and cumulative excess death percentage as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions. \emph{Note: Points indicate weekly excess percentages. Cumulative excess percentages are indicated by curves and derived from cumulated observed and expected deaths. The labels refer to the percent excess over the entire analysis period.}}
-\label{fig:excess}
-\vspace{-1em}\includegraphics{excess.pdf}
+  \caption{Weekly and cumulative excess death percentage as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions. \emph{Note: Points indicate weekly excess percentages. Cumulative excess percentages are indicated by curves and derived from cumulated observed and expected deaths. The labels refer to the range of predicted percent excess over the entire analysis period.}}
+  \label{fig:excess}
+  \vspace{-1em}\includegraphics{excess.pdf}
 \end{figure}
+
+Models agreed on the weekly \emph{pattern} of excess deaths but differed in the estimated \emph{level} of excess (Figure \ref{fig:excess}). The following weekly \emph{patterns} were identified by all models: Austria, Switzerland and the Eastern European countries suffered higher weekly peak excess deaths in fall and winter than in spring. The situation was reversed in France, Netherlands, Scotland, Spain, and Sweden, with lower levels of weekly percent excess in the second half of the year. Belgium and Portugal experienced three distinct waves of pronounced excess death in 2020. Disagreement among models regarding the \emph{level} country specific weekly and annual percent excess deaths in 2020 was typically around 5\%, but could reach double digits within some age and sex strata (Figures \ref{fig:excessf0to65}--\ref{fig:excessm85plus}). Consequently, models disagreed at times regarding the existence of significantly elevated annual percent excess ($P_{2020}>0$ with probability $\geq 0.95$). On the country level we found such disagreement only in Denmark, Finland, Latvia, and Norway, countries with relatively few registered COVID deaths. Within age and sex strata model disagreement was more widespread, affecting 15 out of 20 countries. Belgium, Spain, Scotland, Portugal, and Slovenia were the only countries where all nine models agreed, within \emph{all} age and sex strata, that annual percent excess deaths have been significantly elevated above zero in 2020. On the country level the average death rate model (AVGr5) produced the lowest annual percent excess death estimates in 18 out of 20 countries, whereas the maximum varied, with the Euromomo style Serfling (SRFcem) and the average death count model (AVGc5) producing the highest excess in 13 out of 20 countries.
 
 % country ranking under different models
-The ranking of countries along the percent excess deaths in 2020 was largely stable across those models which controlled for population structure (AVGr5, SRFr, GAM*, LGM*) but fluctuated once an exposure variable was excluded (Figure \ref{fig:rank}). All models agreed on the four countries with the highest (Poland, Spain, Belgium, Slovenia) and lowest (Finland, Latvia, Denmark, Norway) annual percent excess. There was substantial disagreement among the exposure-free models (SRFcem, SRFc, AVGc5) regarding the middle ranks with countries moving between quartiles. France and Lithuania are two extreme examples where the European annual P-score rank stretched across three quartiles depending on the model. Within age and sex strata, we observed even more drastic changes in rank across models without exposure variable, whereas the rate-based models largely agreed in their predicted country rankings (Figure \ref{fig:rankstrata}).
 
 \begin{figure}
-\caption{Country ranking of excess death percentage during the year 2020 weeks 8 through 52 under 10 different models.}
-\label{fig:rank}
-\includegraphics{rank.pdf}
+  \caption{Country ranking of excess death percentage during the year 2020 weeks 8 through 52 under 9 different models.}
+  \label{fig:rank}
+  \includegraphics{rank.pdf}
 \end{figure}
+
+The ranking of countries along the percent excess deaths in 2020 changed between models (Figure \ref{fig:rank}). All models agreed on the five countries with the highest annual percent excess (Poland, Spain, Belgium, Slovenia, Czech Republic) and on the four least affected countries (Finland, Latvia, Denmark, Norway). There was substantial disagreement regarding the middle ranks with Hungary, Lithuania, Sweden, Slovakia, Austria, Hungary, Netherlands, and Portugal jumping by more than 5 positions between models. Ranks under the Serfling with exposures (SRFr) and Generalized Additive Models (GAMr, GAMrt) exhibited high agreement. Within age and sex strata we observed more drastic changes in rank across models, but again with good agreement concerning the top and bottom ranks (Figure \ref{fig:rankstrata}).
 
 % prediction deviations from reference model
-We compared the 5-year average death count model (AVGc5, the reference) to various other models concerning the expected number of deaths in 2020 (Figure \ref{fig:baselinediff}a). The Euromomo Serfling model (SRFcem) and the reference tended to produce the lowest expected death estimates and thus the highest excess death counts, whereas the 5-year average death rate model (AVGr5) gravitated towards the highest expected death counts, with predictions being higher by 3.6 to 5.1\% compared to the reference for half of the countries. The regression models with exposure offset (SRFr, GAM*, LGM*) estimated baseline deaths close to the reference model if somewhat higher, whereas the Serfling model without exposures (SRFc) tended towards substantially higher expected deaths. The Latent Gaussian Models (LGM*) had the highest agreement with the reference, e.g., for half of the countries, the sophisticated model LGMrt2 produced estimates within -0.7 to 1.1\% of the basic average death count prediction. Similar results were found for predictions of total deaths by sex and age strata within a country, albeit with higher variability of the percentage differences for any given model (Figure \ref{fig:baselinediff}b).
 
 \begin{figure}
-\caption{Percent differences of predicted death counts from various models against the 5-year average weekly death prediction. \emph{Note: The prediction differences were summarised across countries and, where applicable, weeks and strata by the 0.25, 0.5, and 0.75 quantiles.}}
-\label{fig:baselinediff}
-\includegraphics{baselinediff.pdf}
+  \caption{Percent differences of predicted death counts from various models against the 5-year average weekly death count model prediction. \emph{Note: The prediction differences were summarised across countries by the 0.25, 0.5, and 0.75 quantiles.}}
+  \label{fig:baselinediff}
+  \includegraphics{baselinediff.pdf}
 \end{figure}
 
-Percentage differences of predicted weekly death counts against the reference model are shown in Figures \ref{fig:baselinediff}c and d. Again, the 5-year average death rate model tended to produce the highest estimates, with half of the weekly predicted counts being at least 3.8\% above those from the reference. The regression models, on average, predicted fewer deaths than reference, with the Euromomo Serfling model featuring especially low weekly expected deaths. Note, however, that these percentage differences varied considerably over countries and strata due to the high variability of the weekly predictions.
+We compared the 5-year average death count model (AVGc5, the reference) to various other models concerning the expected number of deaths in 2020 (Figure \ref{fig:baselinediff}). With the exception of the Euromomo Serfling model (SRFcem), all models tended to predict higher numbers of weekly and annual deaths compared to the average death count (AVGc5) model. The 5-year average death rate model (AVGr5) gravitated towards the highest expected death counts, with annual predictions being higher by 3.1 to 5.1\% compared to the reference for half of the countries. We also found rather high baseline estimates for the Latent Gaussian Models (LGMr, LGMrt) and the Serfling without exposures (SRFc) model. Within population strata results varied. The tendency for the AVGc5 model to produce low expected death counts was most pronounced in the age group 85+, but clearly reversed in the age group 0 to 65. Likewise, the tendency for the AVGr5 model to produce high estimates of excess was present in all age groups but the highest (\ref{fig:baselinediffstrata}).
 
 % cross validation results
 
 \begin{figure}
-\caption{Distribution of test set errors and bias for predicted death counts. \emph{Note: The MAPE (bold) and the MPE were summarised across countries and, where applicable, weeks and sex*age strata by the 0.25, 0.5, and 0.75 quantiles.}}
+\caption{Bias (MPE, bold) and error (MAPE, italic) by model when predicting death counts on test data. \emph{Note: The error and bias measures were summarised across countries by the 0.25, 0.5, and 0.75 quantiles.}}
 \label{fig:biaserror}
 \includegraphics{errorbias.pdf}
 \end{figure}
 
-The cross-validation study confirmed the substantial biases of the Euromomo Serfling regression and the 5-year average death rate and count models (Figure \ref{fig:biaserror}a--d). While the average rate model (AVGr5) consistently displayed the highest propensity among all models to overestimate deaths on four different prediction tasks, the average count (AVGc5) and the Serfling Euromomo models (SRFcem) underestimated deaths. Regression models with exposure offset were comparatively unbiased.
+The cross-validation study confirmed the substantial biases of the Euromomo Serfling regression and the 5-year average death rate and count models (Figure \ref{fig:biaserror}). While the average rate model (AVGr5) consistently displayed the highest propensity among all models to overestimate annual or weekly deaths on the country level, the average count (AVGc5) and the Serfling Euromomo models (SRFcem) underestimated deaths. The lowest bias was presented by the models GAMr and SRFr. For both models the average percentage error when predicting annual death counts was between $-1\%$ and 0.2\% for half of the countries with similar results for week-by-week predictions. Omitting the population structure term from a Serfling model increased the prediction bias as seen for model SRFc. Between sex and age strata the relative model performance when predicting annual deaths often varied with model AVGc5 changing direction of the bias over age and model SRFcem being comparably unbiased in the age group 85+ (Figure \ref{fig:errorbiasstrata}). Models GAMr and SRFr consistently displayed low bias across strata. We found no evidence that the inclusion of a temperature variable decreased the prediction bias. The Latent Gaussian models (LGMr, LGMrt) exhibited a tendency for overprediction, but less severe than for model AVGr5.
 
-When predicting country-level total deaths over weeks 8 through 52 of a year, the median MAPE on the test set ranged from 1.8\% for the best performing regression models (SRFr, GAMr) to 3.5\% for the average death rate model. Notably, the MAPE from the 5-year average death count model was comparable to the error of the best-performing regression models when predicting annual or weekly deaths on the country level (Figures \ref{fig:biaserror}a and c). However, when predicting deaths by sex and age strata, the regression models performed substantially better than either the average rate or count model, with little difference between the various regression specifications (Figures \ref{fig:biaserror}b and d). Cross-validation errors for all models increased by approximately 1 to 2 percentage points going from annual to weekly predictions.
+%When predicting country-level total deaths over weeks 8 through 52 of a year, the median MAPE on the test set ranged from 1.8\% for the best performing regression models (SRFr, GAMr) to 3.5\% for the average death rate model. Notably, the MAPE from the 5-year average death count model was comparable to the error of the best-performing regression models when predicting annual or weekly deaths on the country level (Figures \ref{fig:biaserror}a and c). However, when predicting deaths by sex and age strata, the regression models performed substantially better than either the average rate or count model, with little difference between the various regression specifications (Figures \ref{fig:biaserror}b and d). Cross-validation errors for all models increased by approximately 1 to 2 percentage points going from annual to weekly predictions.
 
 \section*{Discussion}
 
-No matter the chosen model, in 2020, excess deaths across Europe have reached levels not seen since World War 2. Other inferences, however, are less robust to the choice of model. Depending on how the expected deaths were calculated, one may have either Poland, Spain, or Belgium as the worst affected country, Denmark may or may not have had significantly elevated death counts, annual deaths among Slovenian males ages 85+ may be increased by as little as 4\% to as much as 15\%, and death counts following the first wave of the pandemic may have returned to expected levels or dropped into a “mortality deficit.” Thus, short of a standard procedure of specifying expected deaths, robustness checks are crucial. In the simplest case, such a check could be based upon expected deaths via five-year average death rates and alternatively the Serfling Euromomo model, as we found these two approaches to have opposite biases, with predictions from other methods falling in-between.
+No matter the chosen model, in 2020, deaths across Europe have been unusually elevated, exhibiting a weekly pattern closely following the course of the COVID-19 pandemic in the different countries. Other inferences, however, are less robust to the choice of model. Depending on how the expected deaths were calculated, one may have either Poland or Spain as the worst affected country, Denmark may or may not have had significantly elevated death counts, annual deaths among Slovakian males ages 85+ may be increased by as little as 4\% to as much as 15\%, and death counts following the first wave of the pandemic may have returned to expected levels or dropped into a "mortality deficit." Thus, short of a standard procedure of specifying expected deaths, robustness checks are crucial. In the simplest case, such a check could be based upon expected deaths via five-year average death rates and alternatively the Serfling Euromomo model, as we found these two approaches to have opposite biases, with predictions from other methods falling in-between.
 
 The Euromomo model is designed to predict death counts as expected under exceptionally mild seasonal mortality increases, thus resulting in high estimates of excess death. While this makes the Euromomo approach very useful for monitoring influenza-related mortality, the baseline is biased if interpreted as "expected deaths in the absence of the COVID-19 pandemic", as the typical seasonal increase in deaths is not as shallow as predicted under Euromomo. The technical reason for the low Euromomo predictions during fall and winter is the exclusion of weeks with likely influenza activity from the model fitting. If the modeling goal is mortality forecasting, as under the counterfactual no-COVID scenario, then fitting seasonal regression models over all weeks of a year reduces the bias in the forecasted death counts.
 
 A lack of adjustment for continuous mortality improvements, as have been observed across Europe up until 2020 \citep{Leon2011, Aburto2021a}, explains the tendency of the average death rate model towards low estimates of excess. By simply averaging declining death rates over time, one overestimates expected mortality for the current year, thus underestimating excess. Claims of no excess deaths based upon averaged weekly death rates should therefore be checked for robustness against the inclusion of a time trend.
 
-Two opposing time-trends explain the bias of the ubiquitous average weekly death count model: increasing deaths due to population aging and decreasing deaths due to mortality improvements. As the model adjusts for neither trend, it may be biased in either direction, depending on the relative size of either effect in any given country, although we found a slight tendency towards high excess death estimates across Europe. The lower overall bias when averaging counts instead of rates suggests that errors due to non-adjusted time trends cancel to some degree, showing that an incomplete adjustment to trends can be worse than no adjustment at all.
+Two opposing time-trends explain the bias of the ubiquitous average weekly death count model: increasing deaths due to population aging and decreasing deaths due to mortality improvements. As the model adjusts for neither trend, it may be biased in either direction, depending on the relative size of either effect in any given country, although we found a slight tendency towards high excess death estimates across Europe. The lower overall bias when averaging counts instead of rates suggests that errors due to non-adjusted time trends cancel to some degree, demonstrating that an incomplete adjustment to trends can be worse than no adjustment at all.
 
-All seasonal regression models exhibited similar biases given that changing population structure and rates of mortality improvement were adjusted for. The inclusion of temperature effects or autoregressive structures did not consistently improve cross-validation error. A major challenge faced by every model is to estimate the magnitude of the seasonal effect. In the absence of information about influenza activity, all models just predicted an average seasonality for the following Fall and Winter, possibly with minor temperature adjustments. Whether or not an influenza predictor should be included when estimating excess deaths over the COVID-19 pandemic depends on the purpose of the analysis: causal inference or mortality monitoring. A causal estimate of the direct and indirect effects of the pandemic on overall mortality can not accommodate observed influenza activity past the beginning of the pandemic as this variable is itself influenced by the "treatment," i.e., COVID-19 and associated mitigation measures. In a counterfactual world where the COVID-19 pandemic did not happen, influenza activity throughout 2020 may have been different. For mortality monitoring purposes, however, the inclusion of an influenza predictor is admissible as the question is whether the currently observed death counts are unusual given the currently observed levels of influenza.
+A major challenge faced by every model is to estimate the magnitude of the future seasonality. In the absence of information about influenza activity, all models just predicted an average seasonality for the following Fall and Winter, possibly with minor temperature adjustments. Whether or not an influenza predictor should be included when estimating excess deaths over the COVID-19 pandemic depends on the purpose of the analysis: causal inference or mortality monitoring. A causal estimate of the direct and indirect effects of the pandemic on overall mortality can not accommodate observed influenza activity past the beginning of the pandemic as this variable is itself influenced by the "treatment," i.e., COVID-19 and associated mitigation measures \cite{Cowling2020, Soo2020}. In a counterfactual world where the COVID-19 pandemic did not happen, influenza activity throughout 2020 may have been different. For mortality monitoring purposes, however, the inclusion of an influenza predictor is admissible as the question is whether the currently observed death counts are unusual given the currently observed levels of influenza.
 
-How many deaths would we have expected in 2020 if this would have been a typical year? Our definition of expected deaths allows to discriminate between suitable and unsuitable models on empirical grounds: We want a model that excels at short-term forecast of weekly death counts. While robustness checks are a pragmatic way to deal with the reality of many seemingly equivalent analysis strategies, models of expected deaths are not beyond scrutiny. They can and should be put to the test.
+How many deaths would we have expected in 2020 if this would have been a typical year? This definition of expected deaths allows to discriminate between suitable and unsuitable models on empirical grounds: We want a model that excels at short-term forecast of weekly death counts. While robustness checks and model averaging are pragmatic way to deal with model specification uncertainty, models of expected deaths are not beyond scrutiny -- like other prediction models, they can and should be put to the test. Further research into "short-term mortality prediction" promises a better understanding of systematic biases across different model specifications, which can then be synthesized into a set of best practices when modeling expected deaths in the absence of unusual events.
 
 \clearpage
 
@@ -252,87 +325,6 @@ How many deaths would we have expected in 2020 if this would have been a typical
 
 \section*{Supplementary materials}
 
-\subsection*{Model description}
-
-\begin{tabular}{llllll}
-$i$ & observation within a country & $\alpha$ & intercept & $j$ & sex$\times$age stratum \\
-$t$ & weeks since start of data series & $\beta, \zeta$ & time trend coefficients & $j[i]$ & stratum of observation $i$ \\
-$w$ & weeks since start of epi-year & $\gamma$ & seasonality coefficient & $D$ & death count \\
-$H$ & public holiday indicator & $\delta$ & holiday coefficient & $E$ & person-weeks exposure \\
-$T$ & temperature anomaly & $\nu$ & temperature anomaly coef. & $f,g$ & smooth functions of time
-\end{tabular}
-
-\vspace{1em}
-
-All models were implemented and fit in the \texttt{R} programming language.
-
-The \emph{Serfling with exposures} (SRFr) model is a Poisson regression specified as
-
-\begin{equation}
-\begin{aligned}
-  D_i \sim& \text{Pois}(\lambda_i) \\
-  \log \lambda_i =& \alpha_{j[i]} + \beta_{j[i]}t_i + \\
-& \gamma_{1,j[i]}\sin\left(\frac{2\pi}{52}w_i\right) +
-  \gamma_{2,j[i]}\cos\left(\frac{2\pi}{52}w_i\right) +
-  \gamma_{3,j[i]}\sin\left(\frac{2\pi}{26}w_i\right) +
-  \gamma_{4,j[i]}\sin\left(\frac{2\pi}{26}w_i\right) + \\
- & \delta_{j[i]}H_i + \log E_i.
-\end{aligned}
-\label{eq:srfr}
-\end{equation}
-
-Model (\ref{eq:srfr}) expresses weekly death counts as a function of stratum specific intercepts $\alpha_{j[i]}$, relative rates of mortality improvement $\beta_{j[i]}$, time constant parametric seasonal effects $\gamma_{j[i]}$, public holiday intercepts $\delta_{j[i]}$, and population structure $E_i$ offsets. Omitting the term $\log E_i$ from (\ref{eq:srfr}) yields the \emph{Serfling without exposures} (SRFc) model. For the \emph{Euromomo style Serfling model} (SRFcem) we dropped the exposure, holiday and half year seasonal cycle from (\ref{eq:srfr}) and only fitted the model over a five year period on weeks 15 through 26 and 36 through 45. All Serfling models were fit via the \texttt{glm} function in \texttt{R}. Expected deaths in the near future were derived by extrapolating beyond the fitting period.
-
-The \emph{Generalized Additive Model with temperature anomaly} (GAMrt) allows for non-parametric, smooth seasonal effects and adjusts for the effect of extreme temperature on weekly death counts. We specified the model as
-
-\begin{equation}
-  \begin{aligned}
-    D_i \sim& \text{Pois}(\lambda_i) \\
-    \log \lambda_i =& \alpha_{j[i]} + \beta_{j[i]}t_i + f_{j[i]}(w_i) + \nu_{w[i]} T_i + \delta_{j[i]}H_i + \log E_i,
-  \end{aligned}
-  \label{eq:gamrt}
-\end{equation}
-
-where $f_{j[i]}(w_i)$ is a stratum specific seasonality term implemented as a cyclical penalized spline, and $\nu_{w[i]}=g(w_i)$ is the temperature anomaly coefficient varying smoothly over week of year in a cyclical fashion. For the \emph{Generalized Additive Model without temperature anomaly} (GAMr) we omitted this term. Analogous to the SRFr model we specified a log-linear mortality trend, public holiday intercepts, and an offset controlling for population strucure. The model was fit via the \texttt{gam} function from the \texttt{mgcv} library in \texttt{R}.
-
-The \emph{Latent Gaussian model with temperature anomaly} (LGMrt) follows the specification by \cite{Kontis2020}. The model is fitted separately by age group and sex and, omitting the subscript $j[i]$, can be written as:
-
-\begin{equation}
-  \begin{aligned}
-    D_i \sim& \text{Pois}(\lambda_i) \\
-    \log \lambda_i =& \alpha + \beta t_i +
-    \zeta_{t[i]} + \gamma_{t[i]} +
-    \nu_{w[i]} T_i + \delta H_i + \log E_i,
-  \end{aligned}
-  \label{eq:lgmrt}
-\end{equation}
-
-where $\beta t_i$ is a simple log-linear trend over time, $\zeta_{t[i]} \sim \text{Normal}(\phi \zeta_{t[i]-1}, \sigma^2_\zeta)$ is a first order autoregressive trend, and $\gamma_{t[i]}$ is a seasonal random effect under the prior that the summed effect of every consecutive series of 52 weeks on mortality is distributed as $\sum_{s=0}^{51} \gamma_{t[i]+s} \sim \text{Normal}(0, \sigma^2_\gamma)$, thus allowing for a varying magnitude of seasonality over years. The effect of temperature anomalies on weekly mortality is capture by the varying coefficient $\nu_{w[i]} \sim \text{Normal}(\nu_{w[i]-1}, \sigma^2_\nu)$, specified as a circular first order random walk over week of year. We also tested an alternative specification with second order autoregressive trends and random walks (LGMrt2) and a specification without the temperature effect (LGMr). The model was implemented via the \texttt{INLA} library in \texttt{R} \cite{Rue2009, Rue2021}.
-
-In line with the regression notation used above the \emph{5 year average death count model} (AVGc5) can be written as
-
-\begin{equation}
-  \begin{aligned}
-    D_i \sim& \text{Normal}(\mu_i) \\
-    \mu_i =& \alpha_{j[i]w[i]},
-  \end{aligned}
-  \label{eq:avgc}
-\end{equation}
-
-and the \emph{5 year average death rate model} as
-
-\begin{equation}
-  \begin{aligned}
-    D_i/E_i \sim& \text{Normal}(\mu_i) \\
-    \mu_i =& \alpha_{j[i]w[i]}.
-  \end{aligned}
-  \label{eq:avgr}
-\end{equation}
-
-In both cases the coefficients are estimated over the five years preceding the year of interest.
-
-\clearpage
-
 \subsection*{Supplementary figures}
 
 \begin{figure}
@@ -349,28 +341,28 @@ In both cases the coefficients are estimated over the five years preceding the y
 
 \begin{figure}
 \caption{
-Female percent excess deaths for ages 0 to 65 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Female percent excess deaths for ages 0 to 65 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessf0to65}
 \includegraphics{excess_female__0_65_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Female percent excess deaths for ages 65 to 75 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Female percent excess deaths for ages 65 to 75 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessf65to75}
 \includegraphics{excess_female__65_75_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Female percent excess deaths for ages 75 to 85 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Female percent excess deaths for ages 75 to 85 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessf75to85}
 \includegraphics{excess_female__75_85_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Female percent excess deaths for ages 85+ as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Female percent excess deaths for ages 85+ as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessf85plus}
 \includegraphics{excess_female__85_inf_.pdf}
 \end{figure}
@@ -379,28 +371,28 @@ Female percent excess deaths for ages 85+ as predicted from 10 different models 
 
 \begin{figure}
 \caption{
-Male percent excess deaths for ages 0 to 65 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Male percent excess deaths for ages 0 to 65 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessm0to65}
 \includegraphics{excess_male__0_65_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Male percent excess deaths for ages 65 to 75 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Male percent excess deaths for ages 65 to 75 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessm65to75}
 \includegraphics{excess_male__65_75_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Male percent excess deaths for ages 75 to 85 as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Male percent excess deaths for ages 75 to 85 as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessm75to85}
 \includegraphics{excess_male__75_85_.pdf}
 \end{figure}
 
 \begin{figure}
 \caption{
-Male percent excess deaths for ages 85+ as predicted from 10 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
+Male percent excess deaths for ages 85+ as predicted from 9 different models during the year 2020 weeks 8 through 52 for 20 European regions.}
 \label{fig:excessm85plus}
 \includegraphics{excess_male__85_inf_.pdf}
 \end{figure}
@@ -408,9 +400,25 @@ Male percent excess deaths for ages 85+ as predicted from 10 different models du
 % P-score country rank by stratum
 
 \begin{figure}
-\caption{Within-stratum country ranking of excess death percentage during the year 2020 weeks 8 through 52 under 10 different models.}
+\caption{Within-stratum country ranking of excess death percentage during the year 2020 weeks 8 through 52 under 9 different models.}
 \label{fig:rankstrata}
 \vspace{-1em}\includegraphics{rank_strata.pdf}
+\end{figure}
+
+% Difference expected annual deaths from average death count model
+
+\begin{figure}
+  \caption{Within-stratum percent differences of predicted annual death counts from various models against the 5-year average weekly death count model prediction. \emph{Note: The prediction differences were summarised across countries by the 0.25, 0.5, and 0.75 quantiles.}}
+  \label{fig:baselinediffstrata}
+  \includegraphics{baselinediff_strata.pdf}
+\end{figure}
+
+% model specific error and bias when predicting annual death counts by stratum
+
+\begin{figure}
+  \caption{Within-stratum bias (MPE, bold) and error (MAPE, italic) by model when predicting annual death counts on test data. \emph{Note: The error and bias measures were summarised across countries by the 0.25, 0.5, and 0.75 quantiles.}}
+  \label{fig:errorbiasstrata}
+  \includegraphics{errorbias_strata.pdf}
 \end{figure}
 
 \end{appendix}

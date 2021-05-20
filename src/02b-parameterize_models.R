@@ -26,7 +26,7 @@ mod_para <-
     
     # ... AVG ---------------------------------------------------------
     
-    'AVRc5', 'glm', list(
+    'AVGc5', 'glm', list(
       models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks
@@ -37,7 +37,7 @@ mod_para <-
       weeks_for_training = NULL
     ),
     
-    'AVRr5', 'glm', list(
+    'AVGr5', 'glm', list(
       models = list(formula(
         deaths_observed ~
           # single coefficient for every weeks

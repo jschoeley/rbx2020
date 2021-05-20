@@ -100,8 +100,10 @@ dat$predictions_covid_replicate <- NULL
 #dat$excess_deaths <- readRDS(glue('{path$out}/excess_deaths.rds'))
 #dat$excess_deaths_age_sex <- readRDS(glue('{path$out}/excess_deaths_age_sex.rds'))
 
-# Countries where models disagree ---------------------------------
+# Annual P-score significance disagreement ------------------------
 
+# disagreement between models regarding significantly
+# elevated annual P-scores, country level
 dat$excess_deaths %>%
   filter(date == max(date)) %>%
   group_by(region_iso) %>%
@@ -117,6 +119,58 @@ dat$excess_deaths %>%
   ) %>%
   filter(all_excess == FALSE)
 
+# disagreement between models regarding significantly
+# elevated annual P-scores, stratum level
+dat$excess_deaths_age_sex %>%
+  filter(date == max(date)) %>%
+  group_by(region_iso, age_group, sex) %>%
+  summarise(
+    # does any model give significant excess deaths?
+    any_excess = any(cumpscore_q05 > 0),
+    # do all models give significant excess deaths?
+    all_excess = all(cumpscore_q05 > 0),
+    disagreement = all_excess == FALSE & any_excess == TRUE,
+    # which models give significant excess deaths?
+    excess_which = paste0(model_id[cumpscore_q05 > 0], collapse = ' '),
+    # which models do not give significant excess deaths?
+    no_excess_which = paste0(model_id[cumpscore_q05 <= 0], collapse = ' ')
+  ) %>%
+  ungroup() %>%
+  filter(disagreement) %>%
+  pull(region_iso) %>% unique()
+
+# complete agreement between models regarding significantly
+# elevated annual P-scores, stratum level
+dat$excess_deaths_age_sex %>%
+  filter(date == max(date)) %>%
+  group_by(region_iso, age_group, sex) %>%
+  summarise(
+    # does any model give significant excess deaths?
+    any_excess = any(cumpscore_q05 > 0),
+    # do all models give significant excess deaths?
+    all_excess = all(cumpscore_q05 > 0),
+    disagreement = all_excess == FALSE & any_excess == TRUE,
+    # which models give significant excess deaths?
+    excess_which = paste0(model_id[cumpscore_q05 > 0], collapse = ' '),
+    # which models do not give significant excess deaths?
+    no_excess_which = paste0(model_id[cumpscore_q05 <= 0], collapse = ' ')
+  ) %>%
+  group_by(region_iso) %>%
+  filter(all(!disagreement)) %>%
+  pull(region_iso) %>% unique()
+
+# Annual P-score rank disagreement --------------------------------
+
+dat$annual_pscore_rank_disagreement <-
+  dat$excess_deaths %>%
+  filter(date == max(date)) %>%
+  select(region_iso, model_id, cumpscore_expected) %>%
+  arrange(model_id) %>%
+  group_by(model_id) %>%
+  mutate(rank = rank(cumpscore_expected)) %>%
+  group_by(region_iso) %>%
+  summarise(rank_range = diff(range(rank))) %>%
+  arrange(rank_range)
 
 # Examples --------------------------------------------------------
 
@@ -293,8 +347,11 @@ ExportFigure(
 
 # Figure baselinediff ---------------------------------------------
 
-PlotLogratios <- function (
-  logratios,
+# the expected death counts by model compared against the baseline model,
+# via percent point differences, and summarized across countries
+
+PlotBaselinediffs <- function (
+  baselinediffs, facet = NULL,
   xlab = 'Percent difference'
 ) {
   
@@ -307,7 +364,7 @@ PlotLogratios <- function (
   sizeribbon <- 8
   
   fig <-
-    logratios %>%
+    baselinediffs %>%
     ggplot(aes(y = model_id, yend = model_id)) +
     # indicate rows
     geom_segment(
@@ -339,23 +396,29 @@ PlotLogratios <- function (
     figspec$MyGGplotTheme(show_legend = FALSE) +
     scale_color_brewer(type = 'qual', palette = 5)
   
-  list(dat = logratios, fig = fig)
+  list(dat = baselinediffs, fig = fig)
   
 }
 
 PartialSpread <- function (df, name, value, strata, spread) {
   df %>%
-    select(name, value, strata) %>%
+    select(name, value, all_of(strata)) %>%
     pivot_wider(names_from = name, values_from = value) %>%
     pivot_longer(c(-all_of(strata), -all_of(spread)), names_to = name)
 }
 
+# total by country
 dat$fig_baselinediff_a <-
   dat$excess_deaths %>%
+  # only cumulative expected deaths at the end of the year
   filter(date == max(date)) %>%
-  PartialSpread('model_id','cumbaseline_expected',c('region_iso','date'),
+  PartialSpread('model_id','cumbaseline_expected',c('region_iso'),
                 rlang::as_name(cnst$reference_model_name)) %>%
-  mutate(r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100) %>%
+  # percent point difference in expected deaths from reference model
+  mutate(
+    r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100
+  ) %>%
+  # summarize distribution of r over regions by model
   group_by(model_id) %>%
   summarise(
     qlo = quantile(r, p = 0.25, na.rm = TRUE),
@@ -366,13 +429,18 @@ dat$fig_baselinediff_a <-
   mutate(model_id = fct_reorder(model_id, order_1))
 
 fig$baselinediff_a <-
-  PlotLogratios(dat$fig_baselinediff_a)
+  PlotBaselinediffs(dat$fig_baselinediff_a)
 
+# total by country and week
 dat$fig_baselinediff_b <-
   dat$excess_deaths %>%
   PartialSpread('model_id','baseline_expected',c('region_iso','date'),
                 rlang::as_name(cnst$reference_model_name)) %>%
   mutate(r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100) %>%
+  # average r over weeks by model and region
+  group_by(model_id, region_iso) %>%
+  summarise(r = mean(r)) %>%
+  # summarize distribution of r over regions by model
   group_by(model_id) %>%
   summarise(
     qlo = quantile(r, p = 0.25, na.rm = TRUE),
@@ -382,50 +450,13 @@ dat$fig_baselinediff_b <-
   left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
   mutate(model_id = fct_reorder(model_id, order_1))
 
-fig$baselinediff_b <- PlotLogratios(dat$fig_baselinediff_b)
-
-dat$fig_baselinediff_c <-
-  dat$excess_deaths_age_sex %>%
-  filter(date == max(date)) %>%
-  PartialSpread('model_id','baseline_expected',c('region_iso','sex','age_group','date'),
-                rlang::as_name(cnst$reference_model_name)) %>%
-  mutate(r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100) %>%
-  group_by(model_id) %>%
-  summarise(
-    qlo = quantile(r, p = 0.25, na.rm = TRUE),
-    qmd = quantile(r, p = 0.5, na.rm = TRUE),
-    qhi = quantile(r, p = 0.75, na.rm = TRUE)
-  ) %>%
-  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
-  mutate(model_id = fct_reorder(model_id, order_1))
-
-fig$baselinediff_c <- PlotLogratios(dat$fig_baselinediff_c)
-
-dat$fig_baselinediff_d <-
-  dat$excess_deaths_age_sex %>%
-  PartialSpread('model_id','baseline_expected',c('region_iso','sex','age_group','date'),
-                rlang::as_name(cnst$reference_model_name)) %>%
-  mutate(r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100) %>%
-  group_by(model_id) %>%
-  summarise(
-    qlo = quantile(r, p = 0.25, na.rm = TRUE),
-    qmd = quantile(r, p = 0.5, na.rm = TRUE),
-    qhi = quantile(r, p = 0.75, na.rm = TRUE)
-  ) %>%
-  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
-  mutate(model_id = fct_reorder(model_id, order_1))
-
-fig$baselinediff_d <- PlotLogratios(dat$fig_baselinediff_d)
+fig$baselinediff_b <- PlotBaselinediffs(dat$fig_baselinediff_b)
 
 fig$baselinediff <-
   fig$baselinediff_a$fig +
-  labs(subtitle = 'a. total deaths by country', y = 'Model', x = NULL) +
+  labs(subtitle = 'a. annual deaths by country', y = 'Model', x = NULL) +
   fig$baselinediff_b$fig +
-  labs(subtitle = 'b. total deaths by country and stratum', y = NULL, x = NULL) +
-  fig$baselinediff_c$fig +
-  labs(subtitle = 'c. weekly deaths by country', y = NULL, x = NULL) +
-  fig$baselinediff_d$fig +
-  labs(subtitle = 'd. weekly deaths by country and stratum', y = NULL,
+  labs(subtitle = 'b. weekly deaths by country', y = NULL,
        x = 'Percent difference of predicted deaths against AVRc5') +
   plot_layout(ncol = 2, byrow = TRUE)
 fig$baselinediff
@@ -435,7 +466,93 @@ ExportFigure(
   device = 'pdf',
   add_date = FALSE,
   width = figspec$fig_dims$width,
-  height = figspec$fig_dims$width
+  height = figspec$fig_dims$width*0.5
+)
+
+# Figure baselinediff over strata ---------------------------------
+
+PlotBaselinediffsGrid <- function (
+  baselinediffs, facet = NULL,
+  xlab = 'Percent difference'
+) {
+  
+  require(tidyverse)
+  
+  Format <- function (x) { formatC(x, format = 'f', digits = 1) }
+  
+  sizelarge <- 1
+  textsize <- 2
+  sizeribbon <- 8
+  
+  fig <-
+    baselinediffs %>%
+    ggplot(aes(y = model_id, yend = model_id)) +
+    # indicate rows
+    geom_segment(
+      aes(color = highlight),
+      x = -Inf, xend = Inf, size = sizeribbon
+    ) +
+    geom_vline(xintercept = 0, color = 'grey50', size = 1.5) +
+    # plot errors
+    geom_segment(
+      aes(x = qlo, xend = qhi),
+      size = sizelarge
+    ) +
+    geom_label(
+      aes(x = qmd, label = Format(qmd)),
+      label.r = unit(0, 'pt'), size = textsize,
+      label.padding = unit(1, 'pt')
+    ) +
+    geom_text(
+      aes(x = qlo-0.05, label = Format(qlo)),
+      hjust = 'right', size = textsize
+    ) +
+    geom_text(
+      aes(x = qhi+0.05, label = Format(qhi)),
+      hjust = 'left', size = textsize
+    ) +
+    facet_grid(age_group ~ sex) +
+    # misc
+    scale_x_continuous(breaks = seq(-10, 10, 5)) +
+    #coord_cartesian(clip = 'on', xlim = c(-10,10)) +
+    figspec$MyGGplotTheme(show_legend = FALSE) +
+    scale_color_brewer(type = 'qual', palette = 5)
+  
+  list(dat = baselinediffs, fig = fig)
+  
+}
+
+# total by country and stratum
+dat$fig_baselinediff_strata <-
+  dat$excess_deaths_age_sex %>%
+  filter(date == max(date)) %>%
+  PartialSpread('model_id','cumbaseline_expected',c('region_iso','sex','age_group','date'),
+                rlang::as_name(cnst$reference_model_name)) %>%
+  mutate(r = (value-!!cnst$reference_model_name)/!!cnst$reference_model_name*100) %>%
+  group_by(model_id, sex, age_group) %>%
+  summarise(
+    qlo = quantile(r, p = 0.25, na.rm = TRUE),
+    qmd = quantile(r, p = 0.5, na.rm = TRUE),
+    qhi = quantile(r, p = 0.75, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
+  mutate(model_id = fct_reorder(model_id, order_1))
+
+fig$baselinediff_strata <-
+  dat$fig_baselinediff_strata %>%
+  PlotBaselinediffsGrid()
+
+fig$baselinediff_strata$fig <-
+  fig$baselinediff_strata$fig +
+  labs(y = NULL, x = 'Percent difference of predicted annual deaths against AVRc5')
+
+ExportFigure(
+  fig$baselinediff_strata$fig, path = path$out, filename = 'baselinediff_strata',
+  device = 'pdf',
+  add_date = FALSE,
+  width = figspec$fig_dims$width,
+  height = figspec$fig_dims$width*1.4
 )
 
 # Figure rank over strata -----------------------------------------
@@ -608,3 +725,41 @@ ExportFiguresFromList(
   width = figspec$fig_dims$width,
   height = figspec$fig_dims$width*1.3
 )
+
+# Average rank ----------------------------------------------------
+
+dat$fig_rank$main <-
+  dat$excess_deaths %>%
+  filter(date == max(date)) %>%
+  group_by(region_iso) %>%
+  # rank of model prediction by country
+  mutate(rank = rank(cumexcess_expected)) %>%
+  group_by(model_id) %>%
+  # average rank
+  summarise(
+    qlo = quantile(rank, p = 0.25, na.rm = TRUE),
+    qmd = quantile(rank, p = 0.5, na.rm = TRUE),
+    qhi = quantile(rank, p = 0.75, na.rm = TRUE)
+  ) %>%
+  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
+  mutate(model_id = fct_reorder(model_id, order_1))
+
+PlotBaselinediffs(dat$fig_rank$main)
+
+dat$fig_rank$main <-
+  dat$excess_deaths_age_sex %>%
+  filter(date == max(date)) %>%
+  group_by(region_iso, sex, age_group) %>%
+  # rank of model prediction by country
+  mutate(rank = rank(cumexcess_expected)) %>%
+  group_by(model_id, sex, age_group) %>%
+  # average rank
+  summarise(
+    #qlo = quantile(rank, p = 0.25, na.rm = TRUE),
+    qmd = quantile(rank, p = 0.5, na.rm = TRUE),
+    #qhi = quantile(rank, p = 0.75, na.rm = TRUE)
+  ) %>%
+  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
+  mutate(model_id = fct_reorder(model_id, order_1))
+
+PlotBaselinediffsGrid(dat$fig_rank$main)
