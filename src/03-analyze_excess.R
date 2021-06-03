@@ -25,13 +25,11 @@ cnst <- list()
 cnst <- within(cnst, {
   # analyze this many weeks into test-set
   n_weeks_into_test = glob$forecast_n_weeks
-  # number of Poisson replications of weekly predicted death counts
-  sim_rep = 100
   model_metadata = read_csv('src/model_metadata.csv')
   region_metadata = read_csv('src/region_metadata.csv')
   models_to_include = model_metadata[model_metadata$include==1,][['code']]
   # model to compare other model predictions to
-  reference_model_name = quo(`AVRc5`)
+  reference_model_name = quo(`AVGc5`)
 })
 
 dat <- list()
@@ -60,6 +58,21 @@ dat$predictions_covid <-
 
 # save memory
 dat$fitted_models <- NULL
+
+# convert to long format for excess death calculation
+dat$predictions_covid_replicate <-
+  dat$predictions_covid %>%
+  select(
+    model_id,
+    region_iso, sex, age_group,
+    date, deaths_observed, deaths_predicted,
+    contains('deaths_sim')
+  ) %>%
+  pivot_longer(
+    cols = contains('deaths_sim'),
+    names_to = 'sim_id',
+    values_to = 'deaths_simulated'
+  )
 
 # Calculate excess deaths -----------------------------------------
 
@@ -457,7 +470,7 @@ fig$baselinediff <-
   labs(subtitle = 'a. annual deaths by country', y = 'Model', x = NULL) +
   fig$baselinediff_b$fig +
   labs(subtitle = 'b. weekly deaths by country', y = NULL,
-       x = 'Percent difference of predicted deaths against AVRc5') +
+       x = 'Percent difference of predicted deaths against AVGc5') +
   plot_layout(ncol = 2, byrow = TRUE)
 fig$baselinediff
 
@@ -545,7 +558,7 @@ fig$baselinediff_strata <-
 
 fig$baselinediff_strata$fig <-
   fig$baselinediff_strata$fig +
-  labs(y = NULL, x = 'Percent difference of predicted annual deaths against AVRc5')
+  labs(y = NULL, x = 'Percent difference of predicted annual deaths against AVGc5')
 
 ExportFigure(
   fig$baselinediff_strata$fig, path = path$out, filename = 'baselinediff_strata',
@@ -662,7 +675,7 @@ fig$excess_strata <-
       geom_hline(yintercept = 0, color = 'black') +
       geom_point(
         aes(y = pscore_expected*1e2),
-        size = 0.1
+        size = 0.1, alpha = 0.3
       ) +
       geom_line(aes(y = cumpscore_expected*1e2), alpha = 0.5) +
       # end of year excess labels
@@ -746,20 +759,3 @@ dat$fig_rank$main <-
 
 PlotBaselinediffs(dat$fig_rank$main)
 
-dat$fig_rank$main <-
-  dat$excess_deaths_age_sex %>%
-  filter(date == max(date)) %>%
-  group_by(region_iso, sex, age_group) %>%
-  # rank of model prediction by country
-  mutate(rank = rank(cumexcess_expected)) %>%
-  group_by(model_id, sex, age_group) %>%
-  # average rank
-  summarise(
-    #qlo = quantile(rank, p = 0.25, na.rm = TRUE),
-    qmd = quantile(rank, p = 0.5, na.rm = TRUE),
-    #qhi = quantile(rank, p = 0.75, na.rm = TRUE)
-  ) %>%
-  left_join(cnst$model_metadata, by = c('model_id' = 'code')) %>%
-  mutate(model_id = fct_reorder(model_id, order_1))
-
-PlotBaselinediffsGrid(dat$fig_rank$main)
