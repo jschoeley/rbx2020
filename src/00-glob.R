@@ -462,10 +462,6 @@ ExcessDeaths <-
 
 #' Calculate Excess Deaths Residuals and Residual Summaries
 #'
-#' Calculate excess deaths and cumulative excess deaths with prediction
-#' intervals from weekly observed death counts and simulated
-#' replications of predicted weekly death counts.
-#' 
 #' @param df A data frame.
 #' @param date Name of date variable.
 #' @param observed_deaths Name of observed weekly death count variable.
@@ -474,8 +470,8 @@ ExcessDeaths <-
 #' @param ... Names of stratum variables. Death counts in strata not
 #'            mentioned here will be summed across.
 #'
-#' @return A data frame with cumulative excess deaths over time with
-#'         prediction intervals.
+#' @return Data frames with residuals over time and strata and derived
+#'         error summaries.
 DeathsResiduals <-
   function (df, date, observed_deaths, predicted_deaths, cv_id, ...) {
     
