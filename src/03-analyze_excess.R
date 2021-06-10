@@ -759,3 +759,64 @@ dat$fig_rank$main <-
 
 PlotBaselinediffs(dat$fig_rank$main)
 
+# DK excess -------------------------------------------------------
+
+dat$figure_dkexcess$excess_deaths_all <-
+  dat$excess_deaths %>%
+  filter(region_iso == 'DK') %>%
+  left_join(cnst$region_metadata, c('region_iso' = 'region_code')) %>%
+  left_join(cnst$model_metadata, c('model_id' = 'code')) %>%
+  select(region_iso, region_name, model_id = name, date,
+         excess_expected, excess_q05, excess_q95,
+         cumexcess_expected, cumexcess_q05, cumexcess_q95)
+dat$figure_dkexcess$excess_deaths_last <-
+  dat$figure_dkexcess$excess_deaths_all %>% 
+  filter(date == max(date))
+dat$figure_dkexcess$label_colors <- c(positive = '#471227', negative = '#002B36')
+dat$figure_dkexcess$background_colors  <- c(positive = '#f48989', negative = '#89bdf4')
+
+fig$dkexcess <-
+  dat$figure_dkexcess$excess_deaths_all %>%
+  ggplot(aes(x = date, group = model_id)) +
+  geom_hline(yintercept = 0, color = 'black') +
+  geom_ribbon(
+    aes(ymin = cumexcess_q05, ymax = cumexcess_q95),
+    color = NA, fill = 'grey70'
+  ) +
+  geom_line(
+    aes(x = date, y = cumexcess_expected, group = group),
+    data = dat$figure_dkexcess$excess_deaths_all %>% rename(group = model_id),
+    inherit.aes = FALSE, alpha = 0.3
+  ) +
+  geom_line(aes(y = cumexcess_expected), color = 'red', size = 2) +
+  geom_label(
+    aes(
+      x = date, y = cumexcess_expected,
+      label = formatC(cumexcess_expected, format = 'd', big.mark = ',')
+    ),
+    hjust = 1, size = 3, vjust = 1,
+    label.padding = unit(1, 'pt'), label.size = 0, label.r = unit(0, 'pt'),
+    data = dat$figure_dkexcess$excess_deaths_last,
+    inherit.aes = FALSE,
+    color = 'black', alpha = 0.7
+  ) +
+  scale_x_date(date_breaks = '1 month', date_labels = '%b') +
+  scale_y_continuous(labels = scales::label_comma()) +
+  scale_color_identity() +
+  scale_fill_identity() +
+  figspec$MyGGplotTheme(grid = 'xy', panel_border = FALSE, axis = '') +
+  facet_wrap(~model_id) +
+  coord_cartesian(expand = FALSE) +
+  labs(
+    x = NULL, y = 'Cumulative number of excess deaths',
+    title = 'Cumulative excess deaths Denmark 2020w8 through 2020w52 under different baseline models',
+    caption = 'Weekly excess deaths were allowed to be negative. 95% prediction intervals.'
+  )
+fig$dkexcess
+
+ExportFigure(
+  fig$dkexcess, path = path$out, filename = 'dkexcess',
+  device = 'pdf',
+  width = figspec$fig_dims$width,
+  height = figspec$fig_dims$width*0.8, scale = 1.2
+)
